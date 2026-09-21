@@ -2482,6 +2482,38 @@ function ensureBTUHeader_(sheet) {
   sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
 }
 
+/**
+ * ONE-TIME MIGRATION.
+ *
+ * The ">=5% OFF Prime?" column was inserted in the middle of the existing
+ * BTU layout (between ">=10% OFF Prime?" and "Linked Promo ID"). Run this
+ * once from the Apps Script editor (select this function, click Run) before
+ * anyone opens the Back to University tab, so existing "Linked Promo ID" /
+ * "Last Updated" / "Source" data shifts along with the new column instead
+ * of being silently misread from the wrong column.
+ *
+ * Safe to run more than once: it no-ops once the sheet is already on the
+ * new layout.
+ */
+function migrateBTUInsertPrime5Column() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('BTU');
+  if (!sheet || sheet.getLastRow() < 1) {
+    return { status: 'SKIPPED', reason: 'BTU sheet not found or empty.' };
+  }
+
+  var currentHeaderJ = String(sheet.getRange(1, 10).getValue() || '').trim();
+
+  if (currentHeaderJ === '>=5% OFF Prime?') {
+    return { status: 'SKIPPED', reason: 'Already migrated.' };
+  }
+
+  sheet.insertColumnBefore(10);
+  ensureBTUHeader_(sheet);
+
+  return { status: 'SUCCESS' };
+}
+
 function normalizeBTUName_(v) {
   return String(v == null ? '' : v).trim().toLowerCase();
 }
