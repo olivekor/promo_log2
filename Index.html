@@ -383,9 +383,24 @@
           If you want to run consecutive campaigns for several months, please use <strong>Multiple consecutive campaigns</strong>.
         </div>
 
+        <div class="flex items-center gap-2">
+          <label for="campaignCount" class="text-[11px] font-semibold text-gray-600">
+            Number of campaigns
+          </label>
+          <input
+            type="number"
+            id="campaignCount"
+            min="1"
+            step="1"
+            value="4"
+            onchange="handleCampaignCountChange()"
+            class="w-20 px-2 py-1.5 border rounded-lg text-xs"
+          >
+        </div>
+
         <div class="text-[11px] text-gray-500">
-          Four separate campaigns will be created. Each row is saved as a separate promotion in Master_Log.
-          Products can be customized per campaign below.
+          Each row below is saved as a separate promotion in Master_Log, starting right after the previous one ends.
+          Products can be customized per campaign.
         </div>
 
         <div id="campaignRows" class="space-y-2"></div>
@@ -1576,7 +1591,8 @@
 
     // Multi-campaign per-row product selection state.
     // campaignProductSelections[i] holds the selected fetchedProducts indexes for campaign row i.
-    let campaignProductSelections = [[], [], [], []];
+    // Length is driven by the AM-editable "Number of campaigns" input, not a fixed count.
+    let campaignProductSelections = [];
 
     // Edit modal product selection state (separate BQ fetch, keyed by row).
     let editFetchedProducts = [];
@@ -2249,7 +2265,7 @@ function handlePromoPurposeChange() {
         Array.isArray(products) ? products : [];
 
       // New partner products loaded -> per-campaign product selections are stale.
-      campaignProductSelections = [[], [], [], []];
+      campaignProductSelections = [];
 
       if (document.getElementById('promoType').value === 'BASKET_PERCENTAGE') {
         handlePromoTypeChange();
@@ -2379,7 +2395,8 @@ function handlePromoPurposeChange() {
     }
 
     function renderAllCampaignProductPickers() {
-      for (let i = 0; i < 4; i++) renderCampaignProductPicker(i);
+      const campaignCount = getCampaignCount();
+      for (let i = 0; i < campaignCount; i++) renderCampaignProductPicker(i);
     }
 
     function renderCampaignProductPicker(i) {
@@ -2542,6 +2559,24 @@ function handlePromoPurposeChange() {
     }
 
 
+    // Number of campaigns is fully AM-editable (1, 4, 1000... whatever they need),
+    // not a fixed count.
+    function getCampaignCount() {
+      const el = document.getElementById('campaignCount');
+      const n = parseInt(el && el.value, 10);
+      return Number.isFinite(n) && n > 0 ? n : 1;
+    }
+
+    function handleCampaignCountChange() {
+      const el = document.getElementById('campaignCount');
+      if (el) {
+        const n = parseInt(el.value, 10);
+        el.value = (!Number.isFinite(n) || n < 1) ? 1 : Math.floor(n);
+      }
+      renderCampaignRows();
+    }
+
+
     function toggleMultipleCampaigns() {
       const enabled =
         document.getElementById('multipleCampaigns').checked;
@@ -2561,7 +2596,7 @@ function handlePromoPurposeChange() {
         endInput.value = '';
         endInput.disabled = true;
         endInput.classList.add('bg-gray-100');
-        campaignProductSelections = [[], [], [], []];
+        campaignProductSelections = [];
         renderCampaignRows();
       } else {
         endInput.disabled = false;
@@ -2583,15 +2618,16 @@ function handlePromoPurposeChange() {
       if (!startDate) {
         container.innerHTML = `
           <div class="text-xs text-amber-600 font-semibold p-2 bg-amber-50 rounded-lg">
-            Select the main Start Date first. The four campaign rows will then be generated automatically.
+            Select the main Start Date first. The campaign rows will then be generated automatically.
           </div>
         `;
         return;
       }
 
+      const campaignCount = getCampaignCount();
       let html = '';
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < campaignCount; i++) {
         const campaignStart =
           addDaysToDateString(startDate, i * 30);
 
@@ -2699,7 +2735,9 @@ function handlePromoPurposeChange() {
 
       if (isMultiple) {
 
-        for (let i = 0; i < 4; i++) {
+        const campaignCount = getCampaignCount();
+
+        for (let i = 0; i < campaignCount; i++) {
 
           const campaignStart =
             document.getElementById(`campaignStart_${i}`).value;
@@ -3748,7 +3786,10 @@ function handlePromoPurposeChange() {
       const campaignRows = document.getElementById('campaignRows');
       if (campaignRows) campaignRows.innerHTML = '';
 
-      campaignProductSelections = [[], [], [], []];
+      const campaignCountInput = document.getElementById('campaignCount');
+      if (campaignCountInput) campaignCountInput.value = 4;
+
+      campaignProductSelections = [];
 
       document.getElementById('discount').value = '';
       document.getElementById('bppDiscount').value = '';
