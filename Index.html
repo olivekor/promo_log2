@@ -1053,7 +1053,7 @@
     </div>
   </div>
 
-  <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+  <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="glovo-card lg:col-span-2 overflow-x-auto">
@@ -1077,6 +1077,7 @@
               <th class="px-3 py-3 text-center">On promo?</th>
               <th class="px-3 py-3 text-center">≥30% / 2X1?</th>
               <th class="px-3 py-3 text-center">+10% Prime?</th>
+              <th class="px-3 py-3 text-center">+5% Prime?</th>
               <th class="px-3 py-3"></th>
             </tr>
           </thead>
@@ -1100,6 +1101,7 @@
               <th class="px-3 py-3 text-right">% GMV in Promo</th>
               <th class="px-3 py-3 text-right">% GMV ≥30%</th>
               <th class="px-3 py-3 text-right">% GMV Prime</th>
+              <th class="px-3 py-3 text-right">% GMV +5% Prime</th>
             </tr>
           </thead>
           <tbody id="btuSummaryTable"></tbody>
@@ -1141,7 +1143,12 @@
 
     <div>
       <span class="font-bold text-gray-700">% GMV Prime</span>
-      → share of this city's BTU GMV Weight covered by a qualifying Prime promo.
+      → share of this city's BTU GMV Weight covered by a ≥10% OFF Prime promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV +5% Prime</span>
+      → share of this city's BTU GMV Weight covered by a ≥5% OFF Prime promo.
     </div>
 
   </div>
@@ -2063,7 +2070,8 @@ function handlePromoPurposeChange() {
           ['BTU partners', num0(s.total)],
           ['On promo', num0(s.onPromo)],
           ['≥30% / 2X1', num0(s.highDiscount)],
-          ['+10% Prime', num0(s.prime10)]
+          ['+10% Prime', num0(s.prime10)],
+          ['+5% Prime', num0(s.prime5)]
         ].map(function(k) {
           return '<div class="bg-white rounded-xl shadow-sm p-5 border border-purple-100"><div class="text-xs text-purple-700 font-semibold uppercase">' + escapeHtml(k[0]) + '</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + escapeHtml(k[1]) + '</div></div>';
         }).join('');
@@ -2080,6 +2088,7 @@ function handlePromoPurposeChange() {
             '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
+            '<td class="px-3 py-2 text-right">' + pct1(c.prime5Rate) + '</td>' +
             '</tr>';
         }).join('');
       }
@@ -2099,6 +2108,7 @@ function handlePromoPurposeChange() {
           '<td class="px-3 py-2 text-center">' + yesNoSelect(r.onPromo, 'promo', idx) + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(r.highDiscount, 'high', idx) + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(r.prime10, 'prime', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.prime5, 'prime5', idx) + '</td>' +
           '<td class="px-3 py-2 text-right"><button onclick="saveBTURow(' + idx + ')" class="px-2 py-1 rounded bg-purple-700 text-white text-[10px] font-bold">Save</button></td>' +
           '</tr>';
       }).join('');
@@ -2126,6 +2136,7 @@ function handlePromoPurposeChange() {
         onPromo: document.getElementById('btu-promo-' + idx).value,
         highDiscount: document.getElementById('btu-high-' + idx).value,
         prime10: document.getElementById('btu-prime-' + idx).value,
+        prime5: document.getElementById('btu-prime5-' + idx).value,
         linkedPromoId: r.linkedPromoId,
         source: r.source
       };

@@ -2468,6 +2468,7 @@ function ensureBTUHeader_(sheet) {
     'On promo?',
     '>=30% OFF Promo or 2X1?',
     '>=10% OFF Prime?',
+    '>=5% OFF Prime?',
     'Linked Promo ID',
     'Last Updated',
     'Source'
@@ -2547,7 +2548,7 @@ function getBTUTracker() {
   // 1. READ BTU SHEET
   // ---------------------------------------------------------
 
-  var values = sheet.getRange(2, 1, lastRow - 1, 12).getValues();
+  var values = sheet.getRange(2, 1, lastRow - 1, 13).getValues();
 
   Logger.log('BTU DEBUG 1 - values rows: ' + values.length);
   Logger.log('BTU DEBUG 1a - first raw row: ' + JSON.stringify(values[0]));
@@ -2696,7 +2697,7 @@ function getBTUTracker() {
 
     var linkedId = promos.length
       ? promos[promos.length - 1].id
-      : String(r[9] || '');
+      : String(r[10] || '');
 
     return {
       rowIndex: idx + 2,
@@ -2710,11 +2711,12 @@ function getBTUTracker() {
       onPromo: onPromo,
       highDiscount: String(r[7] || ''),
       prime10: String(r[8] || ''),
+      prime5: String(r[9] || ''),
       linkedPromoId: linkedId,
-      lastUpdated: r[10] instanceof Date
-        ? r[10].toISOString()
-        : String(r[10] || ''),
-      source: String(r[11] || 'Initial BTU list')
+      lastUpdated: r[11] instanceof Date
+        ? r[11].toISOString()
+        : String(r[11] || ''),
+      source: String(r[12] || 'Initial BTU list')
     };
   });
 
@@ -2792,10 +2794,12 @@ function makeBTUSummary_(rows) {
         promoWeight: 0,
         highDiscountWeight: 0,
         bppWeight: 0,
+        prime5Weight: 0,
         total: 0,
         onPromo: 0,
         highDiscount: 0,
-        prime10: 0
+        prime10: 0,
+        prime5: 0
       };
     }
     var c = cities[city];
@@ -2806,10 +2810,12 @@ function makeBTUSummary_(rows) {
     var onPromo = String(r.onPromo || '').trim().toLowerCase() === 'yes';
     var high = String(r.highDiscount || '').trim().toLowerCase() === 'yes';
     var prime = String(r.prime10 || '').trim().toLowerCase() === 'yes';
+    var prime5 = String(r.prime5 || '').trim().toLowerCase() === 'yes';
 
     if (onPromo) { c.onPromo++; c.promoWeight += w; }
     if (high) { c.highDiscount++; c.highDiscountWeight += w; }
     if (prime) { c.prime10++; }
+    if (prime5) { c.prime5++; c.prime5Weight += w; }
 
     // BPP/Prime is represented by the tracker Prime flag for the BTU view.
     if (prime) c.bppWeight += w;
@@ -2824,9 +2830,11 @@ function makeBTUSummary_(rows) {
       onPromo: c.onPromo,
       highDiscount: c.highDiscount,
       prime10: c.prime10,
+      prime5: c.prime5,
       promoRate: c.totalWeight ? c.promoWeight / c.totalWeight : 0,
       highDiscountRate: c.totalWeight ? c.highDiscountWeight / c.totalWeight : 0,
       bppRate: c.totalWeight ? c.bppWeight / c.totalWeight : 0,
+      prime5Rate: c.totalWeight ? c.prime5Weight / c.totalWeight : 0,
       // Keep the legacy naming for the UI.
       springPromoRate: c.totalWeight,
       promoGmvRate: c.totalWeight ? c.promoWeight / c.totalWeight : 0
@@ -2840,6 +2848,7 @@ function makeBTUSummary_(rows) {
   var onPromo = rows.filter(function(r){ return String(r.onPromo).toLowerCase() === 'yes'; });
   var highDiscount = rows.filter(function(r){ return String(r.highDiscount).toLowerCase() === 'yes'; });
   var prime10 = rows.filter(function(r){ return String(r.prime10).toLowerCase() === 'yes'; });
+  var prime5 = rows.filter(function(r){ return String(r.prime5).toLowerCase() === 'yes'; });
 
   return {
     total: total,
@@ -2847,6 +2856,7 @@ function makeBTUSummary_(rows) {
     onPromo: onPromo.length,
     highDiscount: highDiscount.length,
     prime10: prime10.length,
+    prime5: prime5.length,
     promoRate: total ? onPromo.length / total : 0,
     cities: list
   };
@@ -2870,7 +2880,7 @@ function saveBTUTrackerRow(rowData) {
   var teamMeta = amTeamMap[amKey] || {};
   var team = String(teamMeta.team || rowData.team || '').trim();
 
-  sheet.getRange(rowIndex, 1, 1, 12).setValues([[
+  sheet.getRange(rowIndex, 1, 1, 13).setValues([[
     rowData.city || '',
     rowData.storeName || '',
     rowData.storeId || '',
@@ -2880,6 +2890,7 @@ function saveBTUTrackerRow(rowData) {
     rowData.onPromo || '',
     rowData.highDiscount || '',
     rowData.prime10 || '',
+    rowData.prime5 || '',
     rowData.linkedPromoId || '',
     new Date(),
     rowData.source || 'Manual'
@@ -2917,6 +2928,7 @@ function addBTUPartner(rowData) {
     rowData.onPromo || 'No',
     rowData.highDiscount || '',
     rowData.prime10 || '',
+    rowData.prime5 || '',
     '',
     new Date(),
     'Manual'
@@ -2941,8 +2953,8 @@ function upsertBTUPartnerFromPromo_(promoData, promoId, masterRowIndex) {
 
   if (existing) {
     sheet.getRange(existing.rowIndex, 7).setValue('Yes');
-    sheet.getRange(existing.rowIndex, 10).setValue(promoId || '');
-    sheet.getRange(existing.rowIndex, 11).setValue(new Date());
+    sheet.getRange(existing.rowIndex, 11).setValue(promoId || '');
+    sheet.getRange(existing.rowIndex, 12).setValue(new Date());
     return;
   }
 
@@ -2957,6 +2969,7 @@ function upsertBTUPartnerFromPromo_(promoData, promoId, masterRowIndex) {
     partner ? partner.accountManager : '',
     partner ? (partner.team || partner.teamGroup || '') : '',
     'Yes',
+    '',
     '',
     '',
     promoId || '',
