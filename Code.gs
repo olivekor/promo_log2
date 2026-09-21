@@ -595,7 +595,7 @@ function submitPromotionToMasterLog(promoData) {
   baseValues[5] = promoData.storeAddressId || 'ALL';
   baseValues[6] = promoData.promoPurpose;
   baseValues[7] = promoData.pitched || 'Yes';
-  baseValues[8] = 'Pending';
+  baseValues[8] = promoData.confirmed || 'No';
   baseValues[9] = promoData.startDate;
   baseValues[10] = promoData.endDate;
   baseValues[11] = promoData.promoType;
@@ -664,6 +664,8 @@ function updatePromotionDetails(rowIdx, promoData) {
   if (currentStatus === 'REJECTED') {
     sheet.getRange(rowIdx, 3).setValue('PENDING_APPROVAL');
     sheet.getRange(rowIdx, 9).setValue('Pending'); // Czyszczenie kolumny Confirmed
+  } else if (promoData.confirmed !== undefined) {
+    sheet.getRange(rowIdx, 9).setValue(promoData.confirmed);
   }
 
   // 3. Zapisujemy zmienione polami dane
