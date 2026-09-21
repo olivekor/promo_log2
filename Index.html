@@ -1,0 +1,3878 @@
+<!DOCTYPE html>
+
+<html lang="pl">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top left, #12382b 0%, #08251c 45%, #041812 100%);
+    }
+
+    .glovo-yellow {
+      background-color: #F2CC38;
+    }
+
+    .glovo-green {
+      background-color: #00A082;
+    }
+
+    .glovo-green-text {
+      color: #00A082;
+    }
+
+    .glovo-card {
+      background: #FFFFFF;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .loading-spinner {
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid #00A082;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+</head>
+
+<body class="p-2 sm:p-6">
+
+  <!-- MAIN CONTAINER -->
+
+  <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+
+<!-- HEADER -->
+
+<div class="glovo-yellow px-8 py-5 flex justify-between items-center border-b border-yellow-400">
+
+  <!-- LEFT: TITLE + HELP TEXT -->
+
+  <div>
+    <div class="text-2xl sm:text-3xl font-extrabold text-black tracking-tight">
+      PROMO LOG <span class="font-medium">2.0</span>
+    </div>
+
+<div class="text-[10px] sm:text-xs font-medium text-black/70 mt-1">
+  Questions or something looks off?
+  <span class="font-bold">Check the AM Guide first.</span>
+  Still need help? Contact
+  <span class="font-bold">Oliwia Korobczyc</span>.
+</div>
+
+  </div>
+
+  <!-- RIGHT: GUIDE + ADMIN MODE -->
+
+  <div class="flex items-center gap-3">
+
+<!-- AM GUIDE BUTTON -->
+<a
+  href="https://docs.google.com/document/d/1jME1dhNyXqPJo3keOFwohXVJsC8J6cPoJUbLW049iJA/edit?tab=t.0#heading=h.t6t8xoddmg93"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="bg-white text-black text-xs font-extrabold px-4 py-2 rounded-full uppercase tracking-wide shadow-sm hover:bg-gray-100 transition flex items-center gap-2"
+>
+  📖 AM Guide / FAQ
+</a>
+
+<!-- ADMIN / AM MODE BADGE -->
+<span
+  id="adminBadge"
+  class="bg-black text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider"
+>
+  AM Mode
+</span>
+
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<div class="bg-gray-100 px-6 pt-3 border-b border-gray-200 flex space-x-2 text-xs font-bold overflow-x-auto">
+
+  <button
+    type="button"
+    onclick="switchTab('tab1')"
+    id="nav-tab1"
+    class="px-5 py-2.5 bg-white rounded-t-lg border-t-2 border-yellow-500 text-black shadow-sm"
+  >
+    1. Create Promo
+  </button>
+
+  <button
+    type="button"
+    onclick="switchTab('tab2')"
+    id="nav-tab2"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
+  >
+    2. Lead Approval Panel
+  </button>
+
+  <button
+    type="button"
+    onclick="switchTab('tab3')"
+    id="nav-tab3"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
+  >
+    3. Approved Campaigns
+  </button>
+
+  <button
+    type="button"
+    onclick="switchTab('tab4')"
+    id="nav-tab4"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
+  >
+    4. Pitching Overview
+  </button>
+
+  <button
+    type="button"
+    onclick="switchTab('tab5')"
+    id="nav-tab5"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
+  >
+    5. Request Partner/Product
+  </button>
+
+  <button
+    type="button"
+    onclick="switchTab('tab6')"
+    id="nav-tab6"
+    class="px-5 py-2.5 text-purple-700 hover:text-purple-900 font-bold bg-purple-50/60 rounded-t-lg"
+  >
+    6. Back to University
+  </button>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 1 - CREATE PROMO -->
+<!-- ========================================================= -->
+
+<div id="tab1" class="p-8 space-y-6 bg-gray-50">
+
+  <!-- PARTNER & CAMPAIGN -->
+  <div class="glovo-card p-6 space-y-4">
+
+    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
+      1. Select Partner & Campaign
+    </h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+      <!-- PARTNER -->
+      <div class="md:col-span-2">
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Search Partner Name
+        </label>
+
+        <div class="flex space-x-2">
+
+          <input
+            type="text"
+            id="partnerInput"
+            list="partnersDatalist"
+            placeholder="Start typing... (e.g. KFC, McDonald's)"
+            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+            onchange="loadProductsAndAddresses()"
+          >
+
+          <datalist id="partnersDatalist"></datalist>
+
+          <button
+            type="button"
+            onclick="loadProductsAndAddresses()"
+            class="glovo-yellow px-4 py-2 rounded-lg text-xs font-bold text-black hover:bg-yellow-400"
+          >
+            Load
+          </button>
+
+        </div>
+      </div>
+
+
+      <!-- ADDRESS -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Store Address ID
+        </label>
+
+        <select
+          id="storeAddressSelect"
+          multiple
+          size="4"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none"
+        >
+          <option value="ALL" selected>ALL - Whole Chain</option>
+        </select>
+        <p class="text-[10px] text-gray-400 mt-1">Przytrzymaj Ctrl / Cmd, aby zaznaczyć kilka adresów ID.</p>
+
+        <p class="text-[10px] text-gray-400 mt-1">
+          ID is for manager information only. Product menu is loaded by Partner Name.
+        </p>
+
+      </div>
+
+
+      <!-- PURPOSE -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Promo Purpose
+        </label>
+
+        <select
+          id="promoPurpose"
+          onchange="handlePromoPurposeChange()"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+        >
+          <option value="Always on">Always on</option>
+          <option value="Key Event">Key Event</option>
+          <option value="Back to University">Back to University</option>
+          <option value="Prime Days">Prime Days</option>
+          <option value="December BCs campaign">December BCs campaign</option>
+          <option value="Others">Others</option>
+        </select>
+
+      </div>
+
+
+      <!-- CONFIRMED -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Confirmed</label>
+        <select id="confirmed" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+          <option value="No">No</option>
+          <option value="Yes">Yes</option>
+        </select>
+      </div>
+
+      <!-- PROMO SETUP BY -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Promo setup by</label>
+        <select id="activationMethod" onchange="handleActivationMethodChange()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+          <option value="Promobot">Promobot</option>
+          <option value="AM">AM</option>
+        </select>
+        <p class="text-[10px] text-red-500 font-semibold mt-1">Promobot not available for SXGY and BPP Promos</p>
+      </div>
+
+      <!-- BUDGET -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Budget Source
+        </label>
+
+        <select
+          id="budgetSource"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+        >
+          <option value="Top 3 test" disabled>Top 3 test</option>
+          <option value="BP Budget">BP Budget</option>
+          <option value="No budget">No budget</option>
+        </select>
+
+      </div>
+
+
+      <!-- PITCHED -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Pitched !!!
+        </label>
+
+        <select
+          id="pitched"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+        >
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <!-- DATES -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Start Date
+        </label>
+
+        <input
+          type="date"
+          id="startDate"
+          onchange="handleMainStartDateChange()"
+          class="w-full px-3 py-2 border rounded-lg text-sm"
+        >
+
+      </div>
+
+
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          End Date
+
+          <span class="text-red-500 text-[10px] ml-1">
+            (Max 30 days OMNIBUS)
+          </span>
+        </label>
+
+        <input
+          type="date"
+          id="endDate"
+          class="w-full px-3 py-2 border rounded-lg text-sm"
+        >
+
+      </div>
+
+    </div>
+
+    <!-- MULTIPLE CONSECUTIVE CAMPAIGNS -->
+    <div class="border-t pt-4 mt-2">
+
+      <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700">
+        <input
+          type="checkbox"
+          id="multipleCampaigns"
+          onchange="toggleMultipleCampaigns()"
+          class="rounded text-emerald-600 focus:ring-emerald-500"
+        >
+        Multiple consecutive campaigns
+      </label>
+
+      <div
+        id="multipleCampaignPanel"
+        class="hidden mt-4 space-y-3"
+      >
+
+        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-600 font-semibold">
+          ⚠️ Promotions can have a maximum duration of 30 days.<br>
+          If you want to run consecutive campaigns for several months, please use <strong>Multiple consecutive campaigns</strong>.
+        </div>
+
+        <div class="text-[11px] text-gray-500">
+          Four separate campaigns will be created. Each row is saved as a separate promotion in Master_Log.
+          Products can be customized per campaign below.
+        </div>
+
+        <div id="campaignRows" class="space-y-2"></div>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- PROMOTION DETAILS -->
+  <div class="glovo-card p-6 space-y-4">
+
+    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
+      2. Configure Promotion Details
+    </h3>
+
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+      <!-- TYPE -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Promo Type
+        </label>
+
+        <select
+          id="promoType"
+          onchange="handlePromoTypeChange()"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+        >
+          <option value="PERCENTAGE_DISCOUNT">
+            PERCENTAGE_DISCOUNT
+          </option>
+
+          <option value="BASKET_PERCENTAGE">
+            SXGY (BASKET_PERCENTAGE)
+          </option>
+
+          <option value="TWO_FOR_ONE">
+            TWO_FOR_ONE
+          </option>
+        </select>
+
+      </div>
+
+
+      <!-- STRATEGY -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Promo Strategy
+        </label>
+
+        <select
+          id="promoStrategy"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+          onchange="toggleBppInput()"
+        >
+          <option value="Standard">Standard</option>
+          <option value="BPP">BPP (Better Prime Promo)</option>
+        </select>
+
+      </div>
+
+
+      <!-- STANDARD DISCOUNT -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Standard Discount (%)
+        </label>
+
+        <input
+          type="number"
+          id="discount"
+          min="0"
+          max="100"
+          placeholder="20"
+          class="w-full px-3 py-2 border rounded-lg text-sm"
+        >
+
+      </div>
+
+
+      <!-- BPP DISCOUNT -->
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          BPP Discount (%)
+
+          <span class="text-gray-400 text-[10px]">
+            (Only if BPP)
+          </span>
+        </label>
+
+        <input
+          type="number"
+          id="bppDiscount"
+          min="0"
+          max="100"
+          placeholder="30"
+          disabled
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100"
+        >
+
+      </div>
+
+    </div>
+
+
+    <!-- COFUNDING -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Co-funding (%)
+        </label>
+
+        <input
+          type="number"
+          id="cofunding"
+          min="0"
+          max="100"
+          placeholder="50"
+          class="w-full px-3 py-2 border rounded-lg text-sm"
+        >
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- PRODUCTS + COVERAGE -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- PRODUCTS -->
+    <div class="md:col-span-2 glovo-card p-6">
+
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">
+        3. Select Products (Loaded from BigQuery)
+      </h3>
+
+
+      <div
+        id="loading"
+        class="hidden text-xs text-gray-500 py-4 font-semibold"
+      >
+        <span class="loading-spinner mr-2"></span>
+        Loading top products from BigQuery...
+      </div>
+
+
+      <div
+        class="max-h-60 overflow-y-auto border rounded-lg p-2 divide-y text-xs"
+        id="productsList"
+      >
+        <p class="text-gray-400 p-2">
+          Select a partner above to fetch Bestsellers.
+        </p>
+      </div>
+
+    </div>
+
+
+    <!-- COVERAGE -->
+    <div class="glovo-card p-6 flex flex-col justify-between items-center text-center">
+
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
+        Menu Coverage
+      </h3>
+
+
+      <div class="relative flex items-center justify-center my-2">
+
+        <div
+          id="coverageGauge"
+          class="text-4xl font-black text-black"
+        >
+          0.0%
+        </div>
+
+      </div>
+
+
+      <div
+        id="coverageStatus"
+        class="text-xs font-bold text-gray-400 uppercase"
+      >
+        Waiting for products...
+      </div>
+
+
+      <div class="w-full pt-4 border-t flex justify-end space-x-2">
+
+        <button
+          type="button"
+          onclick="resetForm()"
+          class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100"
+        >
+          Clear
+        </button>
+
+        <button
+          type="button"
+          id="submitPromoBtn"
+          onclick="submitPromo()"
+          class="glovo-green px-5 py-2 rounded-lg text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span id="submitPromoBtnText">Submit Promotion</span>
+          <span id="submitPromoBtnLoader" class="hidden inline-flex items-center ml-2 align-middle">
+            <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-30" cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          </span>
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 2 - PENDING APPROVAL -->
+<!-- ========================================================= -->
+
+<div
+  id="tab2"
+  class="p-8 hidden bg-gray-50 space-y-4"
+>
+
+  <h2 class="text-base font-bold text-gray-800">
+    Pending Approvals Queue & Metrics
+  </h2>
+
+  <div class="glovo-card p-4 space-y-3">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+
+      <div class="relative w-full md:w-[420px]">
+        <input
+          type="text"
+          id="pendingSearchInput"
+          placeholder="Search by Partner or AM email..."
+          oninput="filterPendingPromos()"
+          class="w-full px-3 py-2 pl-9 pr-9 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
+        >
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <button
+          type="button"
+          onclick="clearPendingSearch()"
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm hidden"
+          id="pendingSearchClear"
+          title="Clear search"
+        >
+          ×
+        </button>
+      </div>
+
+      <div id="pendingSearchCount" class="text-[10px] text-gray-500"></div>
+
+    </div>
+
+    <div
+      id="pendingTable"
+      class="overflow-x-auto text-xs"
+    >
+      <p class="text-gray-400 p-2">
+        Loading pending promotions...
+      </p>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 3 - APPROVED -->
+<!-- ========================================================= -->
+
+<div
+  id="tab3"
+  class="p-8 hidden bg-gray-50 space-y-4"
+>
+
+  <h2 class="text-base font-bold text-gray-800">
+    Approved & Active Campaigns History
+  </h2>
+
+  <div class="glovo-card p-4 space-y-3">
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+
+      <div class="relative w-full md:w-[420px]">
+        <input
+          type="text"
+          id="approvedSearchInput"
+          placeholder="Search by Partner or AM email..."
+          oninput="filterApprovedPromos()"
+          class="w-full px-3 py-2 pl-9 pr-9 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
+        >
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <button
+          type="button"
+          onclick="clearApprovedSearch()"
+          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-sm hidden"
+          id="approvedSearchClear"
+          title="Clear search"
+        >
+          ×
+        </button>
+      </div>
+
+      <div id="approvedSearchCount" class="text-[10px] text-gray-500"></div>
+
+    </div>
+
+    <div
+      id="approvedTable"
+      class="overflow-x-auto text-xs"
+    >
+      <p class="text-gray-400 p-2">
+        Loading approved history...
+      </p>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 4 - PITCHING OVERVIEW -->
+<!-- ========================================================= -->
+
+<div id="tab4" class="p-6 hidden bg-gray-50 space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold text-gray-900">Pitching Overview</h2>
+      <p class="text-xs text-gray-500 mt-1">All partners from Partners • unique partner level • AM and Team mapping</p>
+    </div>
+    <button
+      onclick="loadPitchingOverview()"
+      class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90"
+    >
+      Refresh
+    </button>
+  </div>
+
+  <div id="pitchingLoading" class="glovo-card p-8 text-center hidden">
+    <span class="loading-spinner"></span>
+    <p class="text-xs text-gray-500 mt-3">Loading pitching overview...</p>
+  </div>
+
+  <div id="pitchingContent" class="space-y-6">
+    <!-- 1. KPIS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="pitchingKpis"></div>
+
+    <!-- 2. TEAM OVERVIEW -->
+    <div class="glovo-card overflow-x-auto">
+      <div class="p-5 border-b border-gray-100">
+        <h3 class="font-extrabold text-gray-900">Team overview</h3>
+        <p class="text-xs text-gray-500 mt-1">Overall pitching performance by Team</p>
+      </div>
+      <table class="min-w-full text-xs">
+        <thead class="bg-gray-50 text-gray-500 uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Team</th>
+            <th class="px-4 py-3 text-right">Eligible</th>
+            <th class="px-4 py-3 text-right">Pitched</th>
+            <th class="px-4 py-3 text-right">Pitch rate</th>
+            <th class="px-4 py-3 text-right">Confirmed</th>
+            <th class="px-4 py-3 text-right">Confirm rate</th>
+            <th class="px-4 py-3 text-right">Avg KE co-financing</th>
+            <th class="px-4 py-3 text-right">Avg AO co-financing</th>
+          </tr>
+        </thead>
+        <tbody id="pitchingTeamTable"></tbody>
+      </table>
+    </div>
+
+    <!-- TOP 3 BUDGET OVERVIEW -->
+    <div class="glovo-card p-6 border-l-8 border-yellow-400 bg-yellow-50/30 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-extrabold text-gray-900">🏆 Top 3 Promo Test Overview</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Dedykowane statystyki wyłącznie dla partnerów z listy Top3_Partners</p>
+        </div>
+        <span class="bg-yellow-400 text-black text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">Top 3 Budget Scope</span>
+      </div>
+
+      <!-- KAFELKI KPI -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="top3PitchingKpis"></div>
+
+      <!-- TABELA ZESPOŁÓW TOP 3 -->
+      <div class="bg-white rounded-xl shadow-sm border border-yellow-200 overflow-hidden">
+        <div class="p-4 border-b border-yellow-100 bg-yellow-50/50">
+          <h4 class="font-extrabold text-gray-900 text-xs uppercase tracking-wider">Top 3 Team Overview</h4>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs">
+            <thead class="bg-yellow-50/30 text-gray-500 uppercase">
+              <tr>
+                <th class="px-4 py-3 text-left">Team</th>
+                <th class="px-4 py-3 text-right">Eligible</th>
+                <th class="px-4 py-3 text-right">Pitched</th>
+                <th class="px-4 py-3 text-right">Pitch rate</th>
+                <th class="px-4 py-3 text-right">Confirmed</th>
+                <th class="px-4 py-3 text-right">Confirm rate</th>
+                <th class="px-4 py-3 text-right">Avg KE co-financing</th>
+                <th class="px-4 py-3 text-right">Avg AO co-financing</th>
+              </tr>
+            </thead>
+            <tbody id="top3PitchingTeamTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. KEY EVENT VS ALWAYS ON -->
+    <div class="glovo-card overflow-x-auto">
+      <div class="p-5 border-b border-gray-100 flex items-center justify-between gap-4">
+        <div>
+          <h3 class="font-extrabold text-gray-900">Key Event vs Always On</h3>
+          <p class="text-xs text-gray-500 mt-1">
+            Unique partners with activity in the selected promo purpose
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <label for="pitchingPurposeFilter" class="text-[10px] font-semibold text-gray-500 uppercase">
+            Promo Purpose
+          </label>
+          <select
+            id="pitchingPurposeFilter"
+            onchange="renderPitchingPurposeStats()"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white"
+          >
+            <option value="Key Event">Key Event</option>
+            <option value="Always on">Always on</option>
+            <option value="Back to University">Back to University</option>
+            <option value="Prime Days">Prime Days</option>
+            <option value="December BCs campaign">December BCs campaign</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+      </div>
+
+      <table class="min-w-full text-xs">
+        <thead class="bg-gray-50 text-gray-500 uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Team</th>
+            <th class="px-4 py-3 text-right">Eligible</th>
+            <th class="px-4 py-3 text-right">Pitched</th>
+            <th class="px-4 py-3 text-right">Pitch Rate</th>
+            <th class="px-4 py-3 text-right">Confirmed</th>
+            <th class="px-4 py-3 text-right">Confirm Rate</th>
+          </tr>
+        </thead>
+        <tbody id="pitchingPurposeTable"></tbody>
+      </table>
+    </div>
+
+    <!-- 4. ACCOUNT MANAGER OVERVIEW (NA SAMYM DOLE) -->
+    <div class="glovo-card overflow-x-auto">
+      <div class="p-5 border-b border-gray-100">
+        <h3 class="font-extrabold text-gray-900">Account Manager overview</h3>
+        <p class="text-xs text-gray-500 mt-1">AM list changes? Contact Oliwia Korobczyc</p>
+      </div>
+      <table class="min-w-full text-xs">
+        <thead class="bg-gray-50 text-gray-500 uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Account Manager</th>
+            <th class="px-4 py-3 text-left">Team</th>
+            <th class="px-4 py-3 text-right">Eligible</th>
+            <th class="px-4 py-3 text-right">Pitched</th>
+            <th class="px-4 py-3 text-right">Pitch rate</th>
+            <th class="px-4 py-3 text-right">Confirmed</th>
+            <th class="px-4 py-3 text-right">Confirm rate</th>
+            <th class="px-4 py-3 text-right">KE Pitched</th>
+            <th class="px-4 py-3 text-right">AO Pitched</th>
+            <th class="px-4 py-3 text-right">Avg KE Cofin.</th>
+            <th class="px-4 py-3 text-right">Avg AO Cofin.</th>
+          </tr>
+        </thead>
+        <tbody id="pitchingAmTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 5 - REQUEST -->
+<!-- ========================================================= -->
+
+<div
+  id="tab5"
+  class="p-8 hidden bg-gray-50 space-y-6"
+>
+
+  <div class="glovo-card p-6 space-y-6 max-w-3xl mx-auto">
+
+    <div>
+      <h2 class="text-base font-bold text-gray-800">
+        Request New Partner or Missing Product
+      </h2>
+    </div>
+
+
+    <div class="space-y-4">
+
+      <!-- REQUEST TYPE -->
+      <div>
+
+        <label class="block text-xs font-semibold text-gray-700 mb-1">
+          1. Request Type
+        </label>
+
+        <select
+          id="reqType"
+          class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+        >
+          <option value="Add New Partner">
+            Add New Partner to Log
+          </option>
+
+          <option value="Add Missing Product">
+            Add Missing Products to Existing Partner
+          </option>
+        </select>
+
+      </div>
+
+
+      <!-- PARTNER + SF ID -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div>
+
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            Partner Name
+          </label>
+
+          <input
+            type="text"
+            id="reqPartnerName"
+            placeholder="e.g. Express Pizza Gdańsk"
+            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label class="block text-xs font-semibold text-gray-700 mb-1">
+            Store Address ID
+          </label>
+
+          <input
+            type="text"
+            id="reqSfId"
+            placeholder="e.g. 578308"
+            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+          >
+
+        </div>
+
+      </div>
+
+
+      <!-- REGION -->
+      <div>
+
+        <label class="block text-xs font-semibold text-gray-700 mb-1">
+          City / Region
+        </label>
+
+        <input
+          type="text"
+          id="reqRegion"
+          placeholder="e.g. WAW, KRA, 3-City"
+          class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+        >
+
+      </div>
+
+
+      <!-- COMMENTS -->
+      <div>
+
+        <label class="block text-xs font-semibold text-gray-700 mb-1">
+          Comments / Missing Product Names / Details
+        </label>
+
+        <textarea
+          id="reqComments"
+          rows="3"
+          placeholder="Opisz powód lub podaj nazwy konkretnych produktów z menu..."
+          class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+        ></textarea>
+
+      </div>
+
+
+      <!-- SUBMIT -->
+      <div class="pt-2 flex justify-end">
+
+        <button
+          type="button"
+          onclick="submitPartnerRequestForm()"
+          class="glovo-yellow px-6 py-2.5 rounded-lg text-xs font-bold text-black hover:bg-yellow-400 shadow-sm"
+        >
+          Send Request to Data Ops
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 6 - BACK TO UNIVERSITY -->
+<!-- ========================================================= -->
+
+<div id="tab6" class="p-6 hidden bg-purple-50 space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold text-purple-900">🎓 Back to University Tracker</h2>
+      <p class="text-xs text-purple-700 mt-1">Temporary tracker • initial partner list + additional partners added by the team</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="openBTUAddModal()" class="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-bold hover:bg-purple-800">+ Add Partner</button>
+      <button onclick="loadBTUTracker()" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90">Refresh</button>
+    </div>
+  </div>
+
+  <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="glovo-card lg:col-span-2 overflow-x-auto">
+      <div class="p-5 border-b border-purple-100">
+        <h3 class="font-extrabold text-gray-900">Partner tracker</h3>
+        <p class="text-xs text-gray-500 mt-1">Edit the tracker directly and save individual rows.</p>
+        <div class="mt-3">
+          <input id="btuSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterBTUTracker()" class="w-full px-3 py-2 border rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-300">
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-purple-50 text-gray-600 uppercase">
+            <tr>
+              <th class="px-3 py-3 text-left">City</th>
+              <th class="px-3 py-3 text-left">Partner</th>
+              <th class="px-3 py-3 text-left">Store ID</th>
+              <th class="px-3 py-3 text-left">AM</th>
+              <th class="px-3 py-3 text-left">Team</th>
+              <th class="px-3 py-3 text-left">Manager</th>
+              <th class="px-3 py-3 text-center">On promo?</th>
+              <th class="px-3 py-3 text-center">≥30% / 2X1?</th>
+              <th class="px-3 py-3 text-center">+10% Prime?</th>
+              <th class="px-3 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="btuTable"></tbody>
+        </table>
+      </div>
+      <div id="btuCount" class="px-5 py-3 text-[10px] text-gray-500 border-t border-gray-100"></div>
+    </div>
+
+    <div class="glovo-card overflow-hidden">
+      <div class="p-5 border-b border-purple-100">
+        <h3 class="font-extrabold text-gray-900">Summary</h3>
+        <p class="text-xs text-gray-500 mt-1">Current BTU tracker status by city</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-gray-50 text-gray-500 uppercase">
+            <tr>
+              <th class="px-3 py-3 text-left">City</th>
+              <th class="px-3 py-3 text-right">% GMV</th>
+              <th class="px-3 py-3 text-right">% GMV in Promo</th>
+              <th class="px-3 py-3 text-right">% GMV ≥30%</th>
+              <th class="px-3 py-3 text-right">% GMV Prime</th>
+            </tr>
+          </thead>
+          <tbody id="btuSummaryTable"></tbody>
+        </table>
+      </div>
+      <div class="p-4 border-t border-gray-100 bg-gray-50">
+
+  <div class="flex gap-2 items-start">
+
+<div class="text-sm mt-0.5">💡</div>
+
+<div class="text-[10px] leading-relaxed text-gray-500">
+
+  <div class="font-extrabold text-gray-700 mb-1">
+    How to read the GMV metrics
+  </div>
+
+  <div class="mb-2">
+    These metrics are <span class="font-bold text-gray-700">GMV-weighted</span>,
+    not partner-count based.
+  </div>
+
+  <div class="space-y-0.5">
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV</span>
+      → total GMV Weight represented by BTU partners in this city.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV in Promo</span>
+      → share of this city's BTU GMV Weight currently covered by a promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV ≥30%</span>
+      → share of this city's BTU GMV Weight covered by a ≥30% OFF or 2X1 promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV Prime</span>
+      → share of this city's BTU GMV Weight covered by a qualifying Prime promo.
+    </div>
+
+  </div>
+
+  <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
+    <span class="font-bold text-gray-500">Important:</span>
+    % GMV is <span class="font-semibold">not the city's total Glovo GMV</span>
+    and does not represent a share of total Poland GMV.
+  </div>
+
+</div>
+
+  </div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- BTU ADD MODAL -->
+<div id="btuAddModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40 p-4">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-extrabold text-gray-900">Add partner to BTU tracker</h3>
+      <button onclick="closeBTUAddModal()" class="text-gray-500 text-xl">×</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Partner</label>
+        <input id="btuAddPartner" list="partnersDatalist" placeholder="Search partner..." class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-700 mb-1">City</label><input id="btuAddCity" placeholder="WAW" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+        <div><label class="block text-xs font-semibold text-gray-700 mb-1">Store ID</label><input id="btuAddStoreId" placeholder="60883" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-5">
+      <button onclick="closeBTUAddModal()" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100">Cancel</button>
+      <button onclick="submitBTUAddPartner()" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add to tracker</button>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <!-- ========================================================= -->
+
+  <!-- DETAILS MODAL -->
+
+  <!-- ========================================================= -->
+
+  <div
+    id="detailsModal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50"
+  >
+
+<div
+  class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-gray-100"
+>
+
+  <div class="flex justify-between items-center border-b pb-3">
+    <div>
+      <h3 class="text-base font-bold text-gray-800">Promotion Details</h3>
+      <p id="detailsSubtitle" class="text-[10px] text-gray-400 mt-1"></p>
+    </div>
+
+    <button
+      type="button"
+      onclick="closeDetailsModal()"
+      class="text-gray-400 hover:text-black font-bold text-lg"
+    >
+      ×
+    </button>
+  </div>
+
+  <div
+    id="detailsContent"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+  ></div>
+
+  <div class="pt-3 border-t flex justify-end">
+    <button
+      type="button"
+      onclick="closeDetailsModal()"
+      class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100"
+    >
+      Close
+    </button>
+  </div>
+
+</div>
+
+  </div>
+
+  <!-- ========================================================= -->
+
+  <!-- EDIT MODAL -->
+
+  <!-- ========================================================= -->
+
+  <div
+    id="editModal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50"
+  >
+
+<div
+  class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-gray-100"
+>
+
+  <!-- MODAL HEADER -->
+  <div class="flex justify-between items-center border-b pb-3">
+
+    <h3 class="text-base font-bold text-gray-800">
+      Edit Promotion Details
+    </h3>
+
+    <button
+      type="button"
+      onclick="closeEditModal()"
+      class="text-gray-400 hover:text-black font-bold text-lg"
+    >
+      ×
+    </button>
+
+  </div>
+
+
+  <input
+    type="hidden"
+    id="editRowIndex"
+  >
+
+
+  <!-- FORM -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <!-- PARTNER -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Partner Name
+      </label>
+
+      <input
+        type="text"
+        id="editPartnerName"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- ADDRESS -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Store Address ID
+      </label>
+
+      <input
+        type="text"
+        id="editStoreAddressId"
+        placeholder="ALL lub np. 578308, 608831"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+      <p class="text-[10px] text-gray-400 mt-0.5">Możesz wpisać kilka ID oddzielonych przecinkiem.</p>
+
+    </div>
+
+
+    <!-- PURPOSE -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Promo Purpose
+      </label>
+
+      <select
+        id="editPromoPurpose"
+        class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+      >
+        <option value="Always on">Always on</option>
+        <option value="Key Event">Key Event</option>
+        <option value="Back to University">Back to University</option>
+        <option value="Prime Days">Prime Days</option>
+        <option value="December BCs campaign">December BCs campaign</option>
+        <option value="Others">Others</option>
+      </select>
+
+    </div>
+
+
+    <!-- PITCHED -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Pitched !!!
+      </label>
+
+      <select
+        id="editPitched"
+        class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+      >
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+
+    </div>
+
+
+    <!-- CONFIRMED -->
+    <div>
+      <label class="block text-xs font-semibold text-gray-700 mb-1">Confirmed</label>
+      <select id="editConfirmed" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+    </div>
+
+    <!-- PROMO SETUP BY -->
+    <div>
+      <label class="block text-xs font-semibold text-gray-700 mb-1">Promo setup by</label>
+      <select id="editActivationMethod" onchange="handleEditActivationMethodChange()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+        <option value="Promobot">Promobot</option>
+        <option value="AM">AM</option>
+      </select>
+      <p class="text-[10px] text-red-500 font-semibold mt-1">Promobot not available for SXGY and BPP Promos</p>
+    </div>
+
+    <!-- BUDGET -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Budget Source
+      </label>
+
+      <select
+        id="editBudgetSource"
+        class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+      >
+        <option value="Top 3 test">Top 3 test</option>
+        <option value="BP Budget">BP Budget</option>
+        <option value="No budget">No budget</option>
+      </select>
+
+    </div>
+
+
+    <!-- START -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Start Date
+      </label>
+
+      <input
+        type="date"
+        id="editStartDate"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- END -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        End Date
+      </label>
+
+      <input
+        type="date"
+        id="editEndDate"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- TYPE -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Promo Type
+      </label>
+
+      <select
+        id="editPromoType"
+        onchange="handleEditActivationMethodChange(); onEditPromoTypeChange();"
+        class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+      >
+        <option value="PERCENTAGE_DISCOUNT">
+          PERCENTAGE_DISCOUNT
+        </option>
+
+        <option value="BASKET_PERCENTAGE">
+          SXGY (BASKET_PERCENTAGE)
+        </option>
+
+        <option value="TWO_FOR_ONE">
+          TWO_FOR_ONE
+        </option>
+      </select>
+
+    </div>
+
+
+    <!-- STRATEGY -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Promo Strategy
+      </label>
+
+      <select
+        id="editPromoStrategy"
+        onchange="handleEditActivationMethodChange()"
+        class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
+      >
+        <option value="Standard">Standard</option>
+        <option value="BPP">BPP (Better Prime Promo)</option>
+      </select>
+
+    </div>
+
+
+    <!-- DISCOUNT -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Standard Discount (%)
+      </label>
+
+      <input
+        type="number"
+        id="editDiscount"
+        min="0"
+        max="100"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- BPP -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        BPP Discount (%)
+      </label>
+
+      <input
+        type="number"
+        id="editBppDiscount"
+        min="0"
+        max="100"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- COFUNDING -->
+    <div>
+
+      <label class="block text-xs font-semibold text-gray-700 mb-1">
+        Co-funding (%)
+      </label>
+
+      <input
+        type="number"
+        id="editCofunding"
+        min="0"
+        max="100"
+        class="w-full px-3 py-2 border rounded-lg text-sm"
+      >
+
+    </div>
+
+
+    <!-- PRODUCTS -->
+    <div class="md:col-span-2 border-t pt-4 mt-1">
+
+      <div class="flex items-center justify-between mb-2">
+        <label class="block text-xs font-semibold text-gray-700">
+          Products on promo
+        </label>
+        <span id="editCoverageLabel" class="text-xs font-black text-gray-800">0.0%</span>
+      </div>
+
+      <div id="editProductsLoading" class="hidden text-[10px] text-gray-500 py-2 font-semibold">
+        <span class="loading-spinner mr-2"></span>
+        Loading products from BigQuery...
+      </div>
+
+      <div
+        id="editProductsList"
+        class="max-h-48 overflow-y-auto border rounded-lg p-2 divide-y text-xs bg-white"
+      >
+        <p class="text-gray-400 p-2">Products will load automatically.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MODAL ACTIONS -->
+  <div class="pt-3 border-t flex justify-end space-x-2">
+
+    <button
+      type="button"
+      onclick="closeEditModal()"
+      class="px-4 py-2 border rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100"
+    >
+      Cancel
+    </button>
+
+    <button
+      type="button"
+      onclick="saveEditModal()"
+      class="glovo-green px-5 py-2 rounded-lg text-xs font-bold text-white hover:bg-emerald-600"
+    >
+      Save Changes
+    </button>
+
+  </div>
+
+</div>
+
+  </div>
+
+  <!-- ========================================================= -->
+
+  <!-- JAVASCRIPT -->
+
+  <!-- ========================================================= -->
+
+  <script>
+
+    let fetchedProducts = [];
+    let pendingPromosList = [];
+    let allPendingPromosList = [];
+    let approvedPromosList = [];
+    let allApprovedPromosList = [];
+    let isAdmin = false;
+
+    // Multi-campaign per-row product selection state.
+    // campaignProductSelections[i] holds the selected fetchedProducts indexes for campaign row i.
+    let campaignProductSelections = [[], [], [], []];
+
+    // Edit modal product selection state (separate BQ fetch, keyed by row).
+    let editFetchedProducts = [];
+    let editSelectedProductNames = [];
+
+    // BTU Tracker state
+    let allBTURows = [];
+    let filteredBTURows = [];
+
+
+    /* ========================================================= */
+    /* HELPER FORMATTERS */
+    /* ========================================================= */
+
+    function pct1(v) { return (Number(v || 0) * 100).toFixed(1) + '%'; }
+    function pct0(v) { return ((Number(v) || 0) * 100).toFixed(1) + '%'; }
+    function num0(v) { return (Number(v) || 0).toLocaleString('en-US'); }
+
+
+    /* ========================================================= */
+    /* INITIAL LOAD */
+    /* ========================================================= */
+
+    window.onload = function () {
+      setMinStartDateConstraints();
+      handlePromoPurposeChange();
+
+
+      google.script.run
+        .withSuccessHandler(populatePartnerList)
+        .withFailureHandler(handleError)
+        .getPartnerList();
+
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+
+          isAdmin = Boolean(res);
+
+          const badge = document.getElementById('adminBadge');
+
+          if (isAdmin) {
+
+            badge.innerText = 'Admin / Lead Mode';
+
+            badge.className =
+              'bg-emerald-700 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider';
+
+          }
+
+        })
+        .withFailureHandler(handleError)
+        .checkIsAdmin();
+
+    };
+
+
+    /* ========================================================= */
+    /* GENERIC ERROR */
+    /* ========================================================= */
+
+    function handleError(err) {
+
+      console.error(err);
+
+      alert(
+        'Wystąpił błąd: ' +
+        (err && err.message ? err.message : err)
+      );
+
+    }
+function handlePromoPurposeChange() {
+
+  const purpose = document.getElementById('promoPurpose')?.value;
+  const budgetSelect = document.getElementById('budgetSource');
+
+  if (!budgetSelect) return;
+
+  const top3Option = budgetSelect.querySelector(
+    'option[value="Top 3 test"]'
+  );
+
+  if (!top3Option) return;
+
+  const isBTU = purpose === 'Back to University';
+
+  if (isBTU) {
+
+    top3Option.disabled = false;
+    top3Option.textContent = 'Top 3 test';
+
+  } else {
+
+    top3Option.disabled = true;
+    top3Option.textContent = 'Top 3 test (BTU only)';
+
+    if (budgetSelect.value === 'Top 3 test') {
+      budgetSelect.value = 'BP Budget';
+    }
+  }
+}
+
+    /* ========================================================= */
+    /* PARTNER LIST */
+    /* ========================================================= */
+
+    function populatePartnerList(partners) {
+
+      const datalist =
+        document.getElementById('partnersDatalist');
+
+      if (!Array.isArray(partners)) {
+        datalist.innerHTML = '';
+        return;
+      }
+
+      datalist.innerHTML = partners
+        .map(function (partner) {
+
+          return '<option value="' +
+            escapeHtml(partner) +
+            '">';
+
+        })
+        .join('');
+
+    }
+
+
+    /* ========================================================= */
+    /* PROMO TYPE / ACTIVATION RULES */
+    /* ========================================================= */
+
+    function handlePromoTypeChange() {
+      const type = document.getElementById('promoType').value;
+      const list = document.getElementById('productsList');
+      const gauge = document.getElementById('coverageGauge');
+      const status = document.getElementById('coverageStatus');
+
+      if (type === 'BASKET_PERCENTAGE') {
+        list.innerHTML = '<div class="p-4 rounded-lg bg-gray-50 text-sm text-gray-600"><strong>Whole menu applies.</strong><br><span class="text-xs">Product selection is not required for BASKET_PERCENTAGE.</span></div>';
+        gauge.innerText = '100.0%';
+        gauge.className = 'text-4xl font-black glovo-green-text';
+        status.innerText = 'Full menu — 100% coverage';
+        status.className = 'text-xs font-bold glovo-green-text uppercase';
+      } else if (fetchedProducts.length) {
+        renderProducts(fetchedProducts);
+      } else {
+        gauge.innerText = '0.0%';
+        status.innerText = 'Waiting for products...';
+        status.className = 'text-xs font-bold text-gray-400 uppercase';
+      }
+
+      handleActivationMethodChange();
+      renderAllCampaignProductPickers();
+    }
+
+    function handleActivationMethodChange() {
+      const type = document.getElementById('promoType').value;
+      const strategy = document.getElementById('promoStrategy').value;
+      const select = document.getElementById('activationMethod');
+      if (!select) return;
+      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+      if (blocked) {
+        select.value = 'AM';
+        select.querySelector('option[value="Promobot"]').disabled = true;
+      } else {
+        select.querySelector('option[value="Promobot"]').disabled = false;
+      }
+    }
+
+    function handleEditActivationMethodChange() {
+      const type = document.getElementById('editPromoType').value;
+      const strategy = document.getElementById('editPromoStrategy').value;
+      const select = document.getElementById('editActivationMethod');
+      if (!select) return;
+      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+      if (blocked) {
+        select.value = 'AM';
+        select.querySelector('option[value="Promobot"]').disabled = true;
+      } else {
+        select.querySelector('option[value="Promobot"]').disabled = false;
+      }
+    }
+
+    /* ========================================================= */
+    /* BPP TOGGLE */
+    /* ========================================================= */
+
+    function toggleBppInput() {
+
+      const strategy =
+        document.getElementById('promoStrategy').value;
+
+      const bppInput =
+        document.getElementById('bppDiscount');
+
+
+      if (strategy === 'BPP') {
+
+        bppInput.disabled = false;
+
+        bppInput.classList.remove('bg-gray-100');
+
+      } else {
+
+        bppInput.disabled = true;
+
+        bppInput.value = '';
+
+        bppInput.classList.add('bg-gray-100');
+
+      }
+
+      handleActivationMethodChange();
+    }
+
+
+    /* ========================================================= */
+    /* TAB SWITCHING */
+    /* ========================================================= */
+
+    function switchTab(tabId) {
+
+      const tabs = [
+        'tab1',
+        'tab2',
+        'tab3',
+        'tab4',
+        'tab5',
+        'tab6'
+      ];
+
+
+      tabs.forEach(function (id) {
+
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+
+        const nav = document.getElementById('nav-' + id);
+        if (nav) nav.className = 'px-5 py-2.5 text-gray-500 hover:text-black';
+
+      });
+
+
+      const activeTab = document.getElementById(tabId);
+      if (activeTab) activeTab.classList.remove('hidden');
+
+      const activeNav = document.getElementById('nav-' + tabId);
+      if (activeNav) {
+        activeNav.className = 'px-5 py-2.5 bg-white rounded-t-lg border-t-2 border-yellow-500 text-black shadow-sm font-bold';
+      }
+
+
+      if (tabId === 'tab2') {
+        loadPendingPromos();
+      }
+
+      if (tabId === 'tab3') {
+        loadApprovedPromos();
+      }
+
+      if (tabId === 'tab4') {
+        loadPitchingOverview();
+      }
+
+      if (tabId === 'tab6') {
+        loadBTUTracker();
+      }
+
+    }
+
+
+    /* ========================================================= */
+    /* PITCHING OVERVIEW */
+    /* ========================================================= */
+
+    function loadPitchingOverview() {
+      const loading = document.getElementById('pitchingLoading');
+      const content = document.getElementById('pitchingContent');
+
+      if (loading) loading.classList.remove('hidden');
+      if (content) content.classList.add('opacity-50');
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          renderPitchingOverview(data || {});
+          if (loading) loading.classList.add('hidden');
+          if (content) content.classList.remove('opacity-50');
+        })
+        .withFailureHandler(function(err) {
+          if (loading) loading.classList.add('hidden');
+          if (content) content.classList.remove('opacity-50');
+          handleError(err);
+        })
+        .getPitchingOverview();
+    }
+
+    function renderPitchingOverview(data) {
+      // 1. KPIS OVERALL
+      const o = data.overall || {};
+      const kpis = [
+        ['All eligible partners', num0(data.totalPartners)],
+        ['Pitched', num0(o.pitched) + ' / ' + num0(o.eligible)],
+        ['Pitch rate', pct0(o.pitchRate)],
+        ['Confirmed', num0(o.confirmed) + ' / ' + num0(o.pitched)]
+      ];
+
+      const kpiContainer = document.getElementById('pitchingKpis');
+      if (kpiContainer) {
+        kpiContainer.innerHTML = kpis.map(function(k) {
+          return '<div class="glovo-card p-5">' +
+            '<div class="text-xs text-gray-500 font-semibold uppercase">' + escapeHtml(k[0]) + '</div>' +
+            '<div class="text-2xl font-extrabold text-gray-900 mt-2">' + escapeHtml(k[1]) + '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      // 2. TOP 3 OVERVIEW (KPIS + TEAM TABLE)
+      const t3 = data.top3Overview || {};
+      const t3O = t3.overall || {};
+      const top3Kpis = [
+        ['Top 3 Eligible Partners', num0(t3.totalEligible)],
+        ['Pitched (Top 3)', num0(t3O.pitched) + ' / ' + num0(t3O.eligible)],
+        ['Pitch Rate (Top 3)', pct0(t3O.pitchRate)],
+        ['Confirmed (Top 3)', num0(t3O.confirmed) + ' / ' + num0(t3O.pitched)]
+      ];
+
+      const top3Container = document.getElementById('top3PitchingKpis');
+      if (top3Container) {
+        top3Container.innerHTML = top3Kpis.map(function(k) {
+          return '<div class="bg-white rounded-xl p-4 shadow-sm border border-yellow-200">' +
+            '<div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">' + escapeHtml(k[0]) + '</div>' +
+            '<div class="text-xl font-black text-gray-900 mt-1">' + escapeHtml(k[1]) + '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      const top3TeamTable = document.getElementById('top3PitchingTeamTable');
+      if (top3TeamTable) {
+        top3TeamTable.innerHTML = (t3.teams || []).map(function(t) {
+          return '<tr class="border-t border-gray-100 hover:bg-yellow-50/20">' +
+            '<td class="px-4 py-3 font-bold">' + escapeHtml(t.team) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.eligible) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.pitched) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold text-amber-600">' + pct0(t.pitchRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.confirmed) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold text-amber-600">' + pct0(t.confirmRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(t.avgKeyEventCofunding) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(t.avgAlwaysOnCofunding) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      // 3. MAIN TEAM TABLE
+      const teamTable = document.getElementById('pitchingTeamTable');
+      if (teamTable) {
+        teamTable.innerHTML = (data.teams || []).map(function(t) {
+          return '<tr class="border-t border-gray-100">' +
+            '<td class="px-4 py-3 font-bold">' + escapeHtml(t.team) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.eligible) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.pitched) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold">' + pct0(t.pitchRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(t.confirmed) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold">' + pct0(t.confirmRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(t.avgKeyEventCofunding) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(t.avgAlwaysOnCofunding) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      window.pitchingOverviewData = data || {};
+      renderPitchingPurposeStats();
+
+      // 4. AM TABLE
+      const amTable = document.getElementById('pitchingAmTable');
+      if (amTable) {
+        amTable.innerHTML = (data.accountManagers || []).map(function(a) {
+          return '<tr class="border-t border-gray-100">' +
+            '<td class="px-4 py-3 font-bold">' + escapeHtml(a.accountManager) + '</td>' +
+            '<td class="px-4 py-3">' + escapeHtml(a.team) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(a.eligible) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(a.pitched) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold">' + pct0(a.pitchRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(a.confirmed) + '</td>' +
+            '<td class="px-4 py-3 text-right font-bold">' + pct0(a.confirmRate) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(a.keyEventPitched) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + num0(a.alwaysOnPitched) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(a.avgKeyEventCofunding) + '</td>' +
+            '<td class="px-4 py-3 text-right">' + pct0(a.avgAlwaysOnCofunding) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+    }
+
+    function renderPitchingPurposeStats() {
+      const data = window.pitchingOverviewData || {};
+      const purpose = document.getElementById('pitchingPurposeFilter')?.value || 'Key Event';
+      const tbody = document.getElementById('pitchingPurposeTable');
+      if (!tbody) return;
+
+      tbody.innerHTML = (data.teams || []).map(function(t) {
+        const stats = (t.purposeStats && t.purposeStats[purpose]) ? t.purposeStats[purpose] : {
+          eligible: 0,
+          pitched: 0,
+          pitchRate: 0,
+          confirmed: 0,
+          confirmRate: 0
+        };
+
+        return '<tr class="border-t border-gray-100">' +
+          '<td class="px-4 py-3 font-bold">' + escapeHtml(t.team) + '</td>' +
+          '<td class="px-4 py-3 text-right">' + num0(stats.eligible) + '</td>' +
+          '<td class="px-4 py-3 text-right">' + num0(stats.pitched) + '</td>' +
+          '<td class="px-4 py-3 text-right font-bold">' + pct0(stats.pitchRate) + '</td>' +
+          '<td class="px-4 py-3 text-right">' + num0(stats.confirmed) + '</td>' +
+          '<td class="px-4 py-3 text-right font-bold">' + pct0(stats.confirmRate) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+
+    /* ========================================================= */
+    /* BACK TO UNIVERSITY TRACKER (TAB 6) */
+    /* ========================================================= */
+
+    function yesNoSelect(value, field, idx) {
+      const v = String(value || '');
+      return '<select onchange="markBTURowDirty(' + idx + ')" id="btu-' + field + '-' + idx + '" class="px-2 py-1 border rounded bg-white text-xs">' +
+        '<option value="" ' + (v === '' ? 'selected' : '') + '></option>' +
+        '<option value="Yes" ' + (v.toLowerCase() === 'yes' ? 'selected' : '') + '>Yes</option>' +
+        '<option value="No" ' + (v.toLowerCase() === 'no' ? 'selected' : '') + '>No</option>' +
+        '</select>';
+    }
+
+    function loadBTUTracker() {
+      console.log('BTU: calling getBTUTracker...');
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          console.log('BTU: response received', data);
+          allBTURows = (data && data.rows) || [];
+          filteredBTURows = allBTURows.slice();
+          renderBTUTracker(data || {});
+        })
+        .withFailureHandler(function(error) {
+          console.error('BTU: BACKEND ERROR', error);
+          handleError(error);
+        })
+        .getBTUTracker();
+    }
+
+    function filterBTUTracker() {
+      const q = String(document.getElementById('btuSearchInput').value || '').trim().toLowerCase();
+      filteredBTURows = !q ? allBTURows.slice() : allBTURows.filter(function(r) {
+        return [r.storeName, r.accountManager, r.manager, r.city, r.storeId, r.team].some(function(v) {
+          return String(v || '').toLowerCase().indexOf(q) !== -1;
+        });
+      });
+      renderBTUTable();
+    }
+
+    function renderBTUTracker(data) {
+      const s = data.summary || {};
+      const kpis = document.getElementById('btuKpis');
+      if (kpis) {
+        kpis.innerHTML = [
+          ['BTU partners', num0(s.total)],
+          ['On promo', num0(s.onPromo)],
+          ['≥30% / 2X1', num0(s.highDiscount)],
+          ['+10% Prime', num0(s.prime10)]
+        ].map(function(k) {
+          return '<div class="bg-white rounded-xl shadow-sm p-5 border border-purple-100"><div class="text-xs text-purple-700 font-semibold uppercase">' + escapeHtml(k[0]) + '</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + escapeHtml(k[1]) + '</div></div>';
+        }).join('');
+      }
+
+      renderBTUTable();
+
+      const summaryTable = document.getElementById('btuSummaryTable');
+      if (summaryTable) {
+        summaryTable.innerHTML = (s.cities || []).map(function(c) {
+          return '<tr class="border-t border-gray-100">' +
+            '<td class="px-3 py-2 font-bold">' + escapeHtml(c.city) + '</td>' +
+            '<td class="px-3 py-2 text-right font-bold">' + pct1(c.totalWeight) + '</td>' +
+            '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
+            '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
+            '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
+            '</tr>';
+        }).join('');
+      }
+    }
+
+    function renderBTUTable() {
+      const tbody = document.getElementById('btuTable');
+      if (!tbody) return;
+      tbody.innerHTML = filteredBTURows.map(function(r, idx) {
+        return '<tr class="border-t border-gray-100" id="btu-row-' + idx + '">' +
+          '<td class="px-3 py-2"><input id="btu-city-' + idx + '" value="' + escapeHtml(r.city) + '" class="w-16 px-2 py-1 border rounded text-xs"></td>' +
+          '<td class="px-3 py-2 font-semibold whitespace-nowrap">' + escapeHtml(r.storeName) + '</td>' +
+          '<td class="px-3 py-2"><input id="btu-storeid-' + idx + '" value="' + escapeHtml(r.storeId) + '" class="w-20 px-2 py-1 border rounded text-xs"></td>' +
+          '<td class="px-3 py-2 whitespace-nowrap"><input id="btu-am-' + idx + '" value="' + escapeHtml(r.accountManager) + '" class="w-64 px-2 py-1 border rounded text-xs" placeholder="AM email"></td>' +
+          '<td class="px-3 py-2">' + escapeHtml(r.team) + '</td>' +
+          '<td class="px-3 py-2 whitespace-nowrap">' + escapeHtml(r.manager || '') + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.onPromo, 'promo', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.highDiscount, 'high', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.prime10, 'prime', idx) + '</td>' +
+          '<td class="px-3 py-2 text-right"><button onclick="saveBTURow(' + idx + ')" class="px-2 py-1 rounded bg-purple-700 text-white text-[10px] font-bold">Save</button></td>' +
+          '</tr>';
+      }).join('');
+
+      const countEl = document.getElementById('btuCount');
+      if (countEl) countEl.innerText = filteredBTURows.length + ' of ' + allBTURows.length + ' partners';
+    }
+
+    function markBTURowDirty(idx) {
+      const row = document.getElementById('btu-row-' + idx);
+      if (row) row.classList.add('bg-purple-50');
+    }
+
+    function saveBTURow(idx) {
+      const r = filteredBTURows[idx];
+      if (!r) return;
+      const payload = {
+        rowIndex: r.rowIndex,
+        city: document.getElementById('btu-city-' + idx).value,
+        storeName: r.storeName,
+        storeId: document.getElementById('btu-storeid-' + idx).value,
+        gmvWeight: r.gmvWeight,
+        accountManager: document.getElementById('btu-am-' + idx).value.trim(),
+        team: r.team,
+        onPromo: document.getElementById('btu-promo-' + idx).value,
+        highDiscount: document.getElementById('btu-high-' + idx).value,
+        prime10: document.getElementById('btu-prime-' + idx).value,
+        linkedPromoId: r.linkedPromoId,
+        source: r.source
+      };
+      google.script.run
+        .withSuccessHandler(function() { loadBTUTracker(); })
+        .withFailureHandler(handleError)
+        .saveBTUTrackerRow(payload);
+    }
+
+    function openBTUAddModal() {
+      const m = document.getElementById('btuAddModal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        document.getElementById('btuAddPartner').value = '';
+        document.getElementById('btuAddCity').value = '';
+        document.getElementById('btuAddStoreId').value = '';
+      }
+    }
+
+    function closeBTUAddModal() {
+      const m = document.getElementById('btuAddModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
+    function submitBTUAddPartner() {
+      const name = document.getElementById('btuAddPartner').value.trim();
+      if (!name) { alert('Select a partner.'); return; }
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.status === 'EXISTS') alert('Partner is already in the BTU tracker.');
+          closeBTUAddModal();
+          loadBTUTracker();
+        })
+        .withFailureHandler(handleError)
+        .addBTUPartner({
+          storeName: name,
+          city: document.getElementById('btuAddCity').value.trim(),
+          storeId: document.getElementById('btuAddStoreId').value.trim()
+        });
+    }
+
+
+    /* ========================================================= */
+    /* LOAD PRODUCTS + ADDRESSES & VALIDATE TOP 3 */
+    /* ========================================================= */
+
+    function loadProductsAndAddresses() {
+
+      const name =
+        document.getElementById('partnerInput').value.trim();
+
+      if (!name) {
+        alert('Please select a partner!');
+        return;
+      }
+
+      document
+        .getElementById('loading')
+        .classList.remove('hidden');
+
+      document
+        .getElementById('productsList')
+        .innerHTML = '';
+
+      google.script.run
+        .withSuccessHandler(renderProducts)
+        .withFailureHandler(function (err) {
+          document
+            .getElementById('loading')
+            .classList.add('hidden');
+          handleError(err);
+        })
+        .getPartnerProducts(name);
+
+      google.script.run
+        .withSuccessHandler(function (addresses) {
+          const select = document.getElementById('storeAddressSelect');
+          let html = '<option value="ALL" selected>ALL - Whole Chain</option>';
+
+          if (Array.isArray(addresses) && addresses.length > 0) {
+            addresses.forEach(function (address) {
+              html += '<option value="' + escapeHtml(address.id) + '">' +
+                escapeHtml(address.id) + ' - ' + escapeHtml(address.name) +
+                '</option>';
+            });
+          }
+
+          select.innerHTML = html;
+        })
+        .withFailureHandler(handleError)
+        .getPartnerAddresses(name);
+
+      validateTop3BudgetEligibility();
+    }
+
+    function validateTop3BudgetEligibility() {
+      const partnerName = document.getElementById('partnerInput').value.trim();
+      const budgetSelect = document.getElementById('budgetSource');
+      const top3Option = budgetSelect ? budgetSelect.querySelector('option[value="Top 3 test"]') : null;
+
+      if (!partnerName || !top3Option) return;
+
+      google.script.run
+        .withSuccessHandler(function(isTop3) {
+          if (isTop3) {
+            top3Option.disabled = false;
+            top3Option.textContent = "Top 3 test";
+          } else {
+            top3Option.disabled = true;
+            top3Option.textContent = "Top 3 test (Not eligible)";
+            if (budgetSelect.value === "Top 3 test") {
+              budgetSelect.value = "BP Budget";
+              alert("Ten partner nie znajduje się na liście Top3_Partners. Zmieniono źródło budżetu.");
+            }
+          }
+        })
+        .checkIsTop3Partner(partnerName);
+    }
+
+
+    /* ========================================================= */
+    /* RENDER PRODUCTS */
+    /* ========================================================= */
+
+    function renderProducts(products) {
+
+      document
+        .getElementById('loading')
+        .classList.add('hidden');
+
+
+      fetchedProducts =
+        Array.isArray(products) ? products : [];
+
+      // New partner products loaded -> per-campaign product selections are stale.
+      campaignProductSelections = [[], [], [], []];
+
+      if (document.getElementById('promoType').value === 'BASKET_PERCENTAGE') {
+        handlePromoTypeChange();
+        return;
+      }
+
+      if (fetchedProducts.length === 0) {
+
+        document.getElementById('productsList').innerHTML =
+          '<p class="text-red-500 p-2">' +
+          'No products found for this partner in BQ.' +
+          '</p>';
+
+        recalculateCoverage();
+        renderAllCampaignProductPickers();
+
+        return;
+
+      }
+
+
+      let html = '';
+
+
+      fetchedProducts.forEach(function (product, idx) {
+
+        const gmvShare =
+          Number(product.gmv_share_pct) || 0;
+
+
+        html += `
+          <label class="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer">
+
+            <div class="flex items-center space-x-2">
+
+              <input
+                type="checkbox"
+                onchange="recalculateCoverage()"
+                value="${idx}"
+                class="product-check rounded text-emerald-600 focus:ring-emerald-500"
+              >
+
+              <span class="font-medium text-gray-800">
+                ${escapeHtml(product.product_name)}
+              </span>
+
+            </div>
+
+            <span class="font-bold text-gray-500">
+              ${gmvShare.toFixed(2)}% GMV
+            </span>
+
+          </label>
+        `;
+
+      });
+
+
+      document.getElementById('productsList').innerHTML =
+        html;
+
+
+      recalculateCoverage();
+      renderAllCampaignProductPickers();
+
+    }
+
+
+    /* ========================================================= */
+    /* COVERAGE */
+    /* ========================================================= */
+
+    function recalculateCoverage() {
+
+      const type = document.getElementById('promoType').value;
+      const gauge = document.getElementById('coverageGauge');
+      const status = document.getElementById('coverageStatus');
+
+      if (type === 'BASKET_PERCENTAGE') {
+        gauge.innerText = '100.0%';
+        gauge.className = 'text-4xl font-black glovo-green-text';
+        status.innerText = 'Coverage: High (>10%) — full menu';
+        status.className = 'text-xs font-bold glovo-green-text uppercase';
+        return;
+      }
+
+      const checkboxes = document.querySelectorAll('.product-check:checked');
+      let total = 0;
+      checkboxes.forEach(function (checkbox) {
+        const product = fetchedProducts[Number(checkbox.value)];
+        if (product) total += Number(product.gmv_share_pct) || 0;
+      });
+
+      gauge.innerText = total.toFixed(1) + '%';
+
+      if (total < 5) {
+        gauge.className = 'text-4xl font-black text-red-500';
+        status.innerText = 'Coverage: Low (<5% target)';
+        status.className = 'text-xs font-bold text-red-500 uppercase';
+      } else if (total <= 10) {
+        gauge.className = 'text-4xl font-black text-amber-500';
+        status.innerText = 'Coverage: Medium (5–10%)';
+        status.className = 'text-xs font-bold text-amber-500 uppercase';
+      } else {
+        gauge.className = 'text-4xl font-black glovo-green-text';
+        status.innerText = 'Coverage: High (>10%)';
+        status.className = 'text-xs font-bold glovo-green-text uppercase';
+      }
+
+    }
+
+    /* ========================================================= */
+    /* MULTI-CAMPAIGN PER-ROW PRODUCT PICKER */
+    /* ========================================================= */
+
+    function calcCampaignCoverage(i) {
+      const promoType = document.getElementById('promoType').value;
+      if (promoType === 'BASKET_PERCENTAGE') return 100;
+
+      const selected = campaignProductSelections[i] || [];
+      let total = 0;
+      selected.forEach(function(idx) {
+        const p = fetchedProducts[idx];
+        if (p) total += Number(p.gmv_share_pct) || 0;
+      });
+      return total;
+    }
+
+    function renderAllCampaignProductPickers() {
+      for (let i = 0; i < 4; i++) renderCampaignProductPicker(i);
+    }
+
+    function renderCampaignProductPicker(i) {
+      const wrap = document.getElementById('campaignProductsWrap_' + i);
+      if (!wrap) return;
+
+      const promoType = document.getElementById('promoType').value;
+
+      if (promoType === 'BASKET_PERCENTAGE') {
+        wrap.innerHTML =
+          '<div class="text-[10px] font-bold text-gray-500 uppercase mb-1">Products (Campaign #' + (i + 1) + ')</div>' +
+          '<div class="p-2 rounded-lg bg-gray-50 text-xs text-gray-600"><strong>Whole menu applies (100%).</strong></div>';
+        return;
+      }
+
+      if (!fetchedProducts.length) {
+        wrap.innerHTML =
+          '<div class="text-[10px] font-bold text-gray-500 uppercase mb-1">Products (Campaign #' + (i + 1) + ')</div>' +
+          '<p class="text-gray-400 text-[10px] p-2">Load a partner above to fetch products.</p>';
+        return;
+      }
+
+      const selected = campaignProductSelections[i] || [];
+
+      let html =
+        '<div class="flex items-center justify-between mb-1">' +
+        '<div class="text-[10px] font-bold text-gray-500 uppercase">Products (Campaign #' + (i + 1) + ')</div>' +
+        '<span id="campaignCoverageLabel_' + i + '" class="text-xs font-black text-gray-800">' + calcCampaignCoverage(i).toFixed(1) + '%</span>' +
+        '</div>' +
+        '<div class="max-h-32 overflow-y-auto border rounded-lg p-1 divide-y text-[11px] bg-white">';
+
+      fetchedProducts.forEach(function(product, idx) {
+        const gmvShare = Number(product.gmv_share_pct) || 0;
+        const checked = selected.indexOf(idx) !== -1 ? 'checked' : '';
+
+        html += '<label class="flex items-center justify-between px-1 py-1 hover:bg-gray-50 cursor-pointer">' +
+          '<span class="flex items-center gap-1">' +
+          '<input type="checkbox" class="campaign-product-check-' + i + '" data-idx="' + idx + '" onchange="onCampaignProductToggle(' + i + ')" ' + checked + '>' +
+          '<span class="text-gray-800">' + escapeHtml(product.product_name) + '</span>' +
+          '</span>' +
+          '<span class="text-gray-400">' + gmvShare.toFixed(1) + '%</span>' +
+          '</label>';
+      });
+
+      html += '</div>';
+
+      wrap.innerHTML = html;
+    }
+
+    function onCampaignProductToggle(i) {
+      const checks = document.querySelectorAll('.campaign-product-check-' + i);
+      const selectedIdx = [];
+      checks.forEach(function(cb) {
+        if (cb.checked) selectedIdx.push(Number(cb.dataset.idx));
+      });
+      campaignProductSelections[i] = selectedIdx;
+
+      const label = document.getElementById('campaignCoverageLabel_' + i);
+      if (label) label.innerText = calcCampaignCoverage(i).toFixed(1) + '%';
+    }
+
+    function getCampaignProductsForSubmit(i) {
+      const promoType = document.getElementById('promoType').value;
+      if (promoType === 'BASKET_PERCENTAGE') return 'ALL MENU';
+
+      const selected = campaignProductSelections[i] || [];
+      return selected
+        .map(function(idx) { return fetchedProducts[idx] ? fetchedProducts[idx].product_name : null; })
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    /* ========================================================= */
+    /* STORE ADDRESS MULTI-SELECT HELPER */
+    /* ========================================================= */
+    function getSelectedStoreAddresses() {
+      const select = document.getElementById('storeAddressSelect');
+      if (!select) return 'ALL';
+      const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+      if (selectedOptions.length === 0 || selectedOptions.includes('ALL')) return 'ALL';
+      return selectedOptions.join(', ');
+    }
+
+
+    /* ========================================================= */
+    /* SUBMIT PROMO */
+    /* ========================================================= */
+
+    function setSubmitPromoLoading(isLoading) {
+
+      const button = document.getElementById('submitPromoBtn');
+      const text = document.getElementById('submitPromoBtnText');
+      const loader = document.getElementById('submitPromoBtnLoader');
+
+      if (!button) return;
+
+      button.disabled = !!isLoading;
+
+      if (text) {
+        text.textContent = isLoading ? 'Submitting...' : 'Submit Promotion';
+      }
+
+      if (loader) {
+        loader.classList.toggle('hidden', !isLoading);
+      }
+    }
+
+    function formatDateForInput(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+
+    function addDaysToDateString(dateString, days) {
+      const date = new Date(dateString + 'T00:00:00');
+      date.setDate(date.getDate() + days);
+      return formatDateForInput(date);
+    }
+
+// Wylicza datę NAJBLIŻSZEGO przyszłego poniedziałku (jeśli dziś jest poniedziałek, pozwala na dzisiaj)
+    function getCurrentWeekMondayDate() {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 = niedziela, 1 = poniedziałek...
+
+      let daysUntilMonday = 0;
+      if (dayOfWeek === 1) {
+        daysUntilMonday = 0; // Jeśli dziś jest poniedziałek, pozwala na dzisiaj
+      } else {
+        // W pozostałe dni (wtorek-niedziela) przesuwa na najbliższy nadchodzący poniedziałek
+        daysUntilMonday = (1 - dayOfWeek + 7) % 7;
+      }
+
+      const nextMonday = new Date(today);
+      nextMonday.setDate(today.getDate() + daysUntilMonday);
+      return formatDateForInput(nextMonday);
+    }
+
+    // Ustawia minimalną dozwoloną datę startu na bieżący poniedziałek
+    function setMinStartDateConstraints() {
+      const minMonday = getCurrentWeekMondayDate();
+      const startInput = document.getElementById('startDate');
+      const editStartInput = document.getElementById('editStartDate');
+
+      if (startInput) {
+        startInput.min = minMonday;
+      }
+      if (editStartInput) {
+        editStartInput.min = minMonday;
+      }
+    }
+
+
+    function handleMainStartDateChange() {
+      const multiple = document.getElementById('multipleCampaigns');
+      if (multiple && multiple.checked) {
+        renderCampaignRows();
+      }
+    }
+
+
+    function toggleMultipleCampaigns() {
+      const enabled =
+        document.getElementById('multipleCampaigns').checked;
+
+      const panel =
+        document.getElementById('multipleCampaignPanel');
+
+      const startInput =
+        document.getElementById('startDate');
+
+      const endInput =
+        document.getElementById('endDate');
+
+      panel.classList.toggle('hidden', !enabled);
+
+      if (enabled) {
+        endInput.value = '';
+        endInput.disabled = true;
+        endInput.classList.add('bg-gray-100');
+        campaignProductSelections = [[], [], [], []];
+        renderCampaignRows();
+      } else {
+        endInput.disabled = false;
+        endInput.classList.remove('bg-gray-100');
+        document.getElementById('campaignRows').innerHTML = '';
+      }
+    }
+
+
+    function renderCampaignRows() {
+      const container =
+        document.getElementById('campaignRows');
+
+      if (!container) return;
+
+      const startDate =
+        document.getElementById('startDate').value;
+
+      if (!startDate) {
+        container.innerHTML = `
+          <div class="text-xs text-amber-600 font-semibold p-2 bg-amber-50 rounded-lg">
+            Select the main Start Date first. The four campaign rows will then be generated automatically.
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+
+      for (let i = 0; i < 4; i++) {
+        const campaignStart =
+          addDaysToDateString(startDate, i * 30);
+
+        const campaignEnd =
+          addDaysToDateString(startDate, (i * 30) + 29);
+
+        html += `
+          <div class="grid grid-cols-1 md:grid-cols-[120px_1fr_1fr] gap-3 items-end border rounded-lg p-3 bg-gray-50">
+
+            <div>
+              <div class="text-xs font-bold text-gray-800">
+                Campaign #${i + 1}
+              </div>
+              <div class="text-[10px] text-gray-400 mt-1">
+                Separate row
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-medium text-gray-600 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                id="campaignStart_${i}"
+                class="multi-campaign-start w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                value="${campaignStart}"
+              >
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-medium text-gray-600 mb-1">
+                End Date
+                <span class="text-red-500 ml-1">Max 30 days</span>
+              </label>
+              <input
+                type="date"
+                id="campaignEnd_${i}"
+                class="multi-campaign-end w-full px-3 py-2 border rounded-lg text-sm bg-white"
+                value="${campaignEnd}"
+              >
+            </div>
+
+            <div class="md:col-span-3" id="campaignProductsWrap_${i}"></div>
+
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+      renderAllCampaignProductPickers();
+    }
+
+
+    function submitPromo() {
+
+      const partnerName =
+        document.getElementById('partnerInput').value.trim();
+
+      if (!partnerName) {
+        alert('Please select a partner!');
+        return;
+      }
+
+      const isMultiple =
+        document.getElementById('multipleCampaigns')?.checked === true;
+
+      const promoType =
+        document.getElementById('promoType').value;
+
+      const promoStrategy =
+        document.getElementById('promoStrategy').value;
+
+      const bppDiscount =
+        document.getElementById('bppDiscount').value;
+
+      if (promoStrategy === 'BPP' && !bppDiscount) {
+        alert('Please enter BPP Discount.');
+        return;
+      }
+
+      const basePromoData = {
+        partnerName: partnerName,
+        storeAddressId: getSelectedStoreAddresses(),
+        promoPurpose:
+          document.getElementById('promoPurpose').value,
+        pitched:
+          document.getElementById('pitched').value,
+        confirmed:
+          document.getElementById('confirmed').value,
+        activationMethod:
+          document.getElementById('activationMethod').value,
+        budgetSource:
+          document.getElementById('budgetSource').value,
+        promoType: promoType,
+        promoStrategy: promoStrategy,
+        discount:
+          document.getElementById('discount').value,
+        bppDiscount: bppDiscount,
+        cofunding:
+          document.getElementById('cofunding').value
+      };
+
+      const promotionsToSubmit = [];
+
+      if (isMultiple) {
+
+        for (let i = 0; i < 4; i++) {
+
+          const campaignStart =
+            document.getElementById(`campaignStart_${i}`).value;
+
+          const campaignEnd =
+            document.getElementById(`campaignEnd_${i}`).value;
+
+          if (!campaignStart || !campaignEnd) {
+            alert(`Campaign #${i + 1}: please select Start Date and End Date.`);
+            return;
+          }
+
+          const start =
+            new Date(campaignStart + 'T00:00:00');
+
+          const end =
+            new Date(campaignEnd + 'T00:00:00');
+
+          const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+          if (start < minMonday) {
+            alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
+            return;
+          }
+          if (end < start) {
+            alert(`Campaign #${i + 1}: End Date cannot be before Start Date.`);
+            return;
+          }
+
+          const duration =
+            Math.floor(
+              (end - start) /
+              (1000 * 60 * 60 * 24)
+            ) + 1;
+
+          if (duration > 30) {
+            alert(
+              `Campaign #${i + 1}: Promotions can have a maximum duration of 30 days.\n\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.`
+            );
+            return;
+          }
+
+          const campaignProducts = getCampaignProductsForSubmit(i);
+
+          if (promoType !== 'BASKET_PERCENTAGE' && !campaignProducts) {
+            alert(`Campaign #${i + 1}: please select at least one product.`);
+            return;
+          }
+
+          promotionsToSubmit.push({
+            ...basePromoData,
+            startDate: campaignStart,
+            endDate: campaignEnd,
+            coverage:
+              promoType === 'BASKET_PERCENTAGE'
+                ? '100.0%'
+                : calcCampaignCoverage(i).toFixed(1) + '%',
+            products: campaignProducts
+          });
+        }
+
+      } else {
+
+        const startDate =
+          document.getElementById('startDate').value;
+
+        const endDate =
+          document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+          alert('Please select Start Date and End Date.');
+          return;
+        }
+
+        const start =
+          new Date(startDate + 'T00:00:00');
+
+        const end =
+          new Date(endDate + 'T00:00:00');
+
+        // Blokada daty wcześniejszej niż bieżący poniedziałek
+        const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+        if (start < minMonday) {
+          alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
+          return;
+        }
+
+        if (end < start) {
+          alert('End Date cannot be before Start Date.');
+          return;
+        }
+
+        const duration =
+          Math.floor(
+            (end - start) /
+            (1000 * 60 * 60 * 24)
+          ) + 1;
+
+        if (duration > 30) {
+          alert(
+            'Promotion cannot be longer than 30 days.\n\n⚠️ Promotions can have a maximum duration of 30 days.\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.'
+          );
+          return;
+        }
+
+        const selectedProducts =
+          getSelectedProductsForSubmit();
+
+        if (
+          promoType !== 'BASKET_PERCENTAGE' &&
+          selectedProducts === ''
+        ) {
+          alert('Please select at least one product!');
+          return;
+        }
+
+        promotionsToSubmit.push({
+          ...basePromoData,
+          startDate: startDate,
+          endDate: endDate,
+          coverage:
+            promoType === 'BASKET_PERCENTAGE'
+              ? '100.0%'
+              : document.getElementById('coverageGauge').innerText,
+          products:
+            promoType === 'BASKET_PERCENTAGE'
+              ? 'ALL MENU'
+              : selectedProducts
+        });
+      }
+
+      setSubmitPromoLoading(true);
+
+      function submitNext(index, results) {
+
+        if (index >= promotionsToSubmit.length) {
+
+          setSubmitPromoLoading(false);
+
+          const count = promotionsToSubmit.length;
+          const ids = results.map(function(result) {
+            return result && result.id ? result.id : '';
+          }).filter(Boolean);
+
+          alert(
+            count === 1
+              ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
+              : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+          );
+
+          resetForm();
+          switchTab('tab2');
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            results.push(res || {});
+            submitNext(index + 1, results);
+          })
+          .withFailureHandler(function(err) {
+            setSubmitPromoLoading(false);
+
+            alert(
+              'Błąd zapisu kampanii #' + (index + 1) + ': ' +
+              (err && err.message ? err.message : err)
+            );
+          })
+          .submitPromotionToMasterLog(
+            promotionsToSubmit[index]
+          );
+      }
+
+      submitNext(0, []);
+    }
+
+
+    function getSelectedProductsForSubmit() {
+      const selectedProducts = [];
+
+      document.querySelectorAll('.product-check:checked').forEach(function(checkbox) {
+        const product = fetchedProducts[Number(checkbox.value)];
+        if (product) {
+          selectedProducts.push(product.product_name);
+        }
+      });
+
+      return selectedProducts.join(', ');
+    }
+
+
+    /* ========================================================= */
+    /* PENDING / APPROVED SEARCH */
+    /* ========================================================= */
+
+    function normalizeSearchText(value) {
+      return String(value == null ? '' : value).toLowerCase().trim();
+    }
+
+    function promoMatchesSearch(promo, query) {
+      if (!query) return true;
+
+      const partner = normalizeSearchText(promo.partnerName);
+      const am = normalizeSearchText(promo.am);
+
+      return partner.includes(query) || am.includes(query);
+    }
+
+    function filterPendingPromos() {
+      const input = document.getElementById('pendingSearchInput');
+      const query = normalizeSearchText(input ? input.value : '');
+
+      pendingPromosList = allPendingPromosList.filter(function(promo) {
+        return promoMatchesSearch(promo, query);
+      });
+
+      const clear = document.getElementById('pendingSearchClear');
+      if (clear) clear.classList.toggle('hidden', !query);
+
+      renderPendingTableFiltered();
+      updatePendingSearchCount();
+    }
+
+    function clearPendingSearch() {
+      const input = document.getElementById('pendingSearchInput');
+      if (input) input.value = '';
+      filterPendingPromos();
+    }
+
+    function updatePendingSearchCount() {
+      const el = document.getElementById('pendingSearchCount');
+      if (!el) return;
+
+      const total = allPendingPromosList.length;
+      const shown = pendingPromosList.length;
+      el.textContent = total ? (shown + ' of ' + total + ' promotions') : '';
+    }
+
+    function filterApprovedPromos() {
+      const input = document.getElementById('approvedSearchInput');
+      const query = normalizeSearchText(input ? input.value : '');
+
+      approvedPromosList = allApprovedPromosList.filter(function(promo) {
+        return promoMatchesSearch(promo, query);
+      });
+
+      const clear = document.getElementById('approvedSearchClear');
+      if (clear) clear.classList.toggle('hidden', !query);
+
+      renderApprovedTableFiltered();
+      updateApprovedSearchCount();
+    }
+
+    function clearApprovedSearch() {
+      const input = document.getElementById('approvedSearchInput');
+      if (input) input.value = '';
+      filterApprovedPromos();
+    }
+
+    function updateApprovedSearchCount() {
+      const el = document.getElementById('approvedSearchCount');
+      if (!el) return;
+
+      const total = allApprovedPromosList.length;
+      const shown = approvedPromosList.length;
+      el.textContent = total ? (shown + ' of ' + total + ' campaigns') : '';
+    }
+
+    function renderPendingTableFiltered() {
+      const filtered = pendingPromosList.slice();
+      renderPendingTable(filtered, true);
+    }
+
+    function renderApprovedTableFiltered() {
+      const filtered = approvedPromosList.slice();
+      renderApprovedTable(filtered, true);
+    }
+
+    /* ========================================================= */
+    /* PENDING PROMOS */
+    /* ========================================================= */
+
+    function loadPendingPromos() {
+
+      google.script.run
+        .withSuccessHandler(renderPendingTable)
+        .withFailureHandler(handleError)
+        .getPromotionsByStatus('PENDING_APPROVAL');
+
+    }
+
+
+    /* ========================================================= */
+    /* RENDER PENDING */
+    /* ========================================================= */
+
+    function renderPendingTable(promos, preserveSource) {
+
+      if (!preserveSource) {
+        allPendingPromosList = Array.isArray(promos) ? promos : [];
+        pendingPromosList = allPendingPromosList.slice();
+      }
+
+      updatePendingSearchCount();
+
+      if (pendingPromosList.length === 0) {
+        document.getElementById('pendingTable').innerHTML =
+          '<p class="text-gray-400 p-2">No pending promotions waiting for approval.</p>';
+        return;
+      }
+
+      let html = `
+        <table class="w-full text-left border-collapse min-w-max">
+          <thead>
+            <tr class="border-b font-bold text-gray-700 bg-gray-100 uppercase text-[10px] tracking-wider">
+              <th class="p-2 sticky left-0 bg-gray-100 z-20 whitespace-nowrap">Action</th>
+              <th class="p-2">Partner</th>
+              <th class="p-2">Address ID</th>
+              <th class="p-2">AM</th>
+              <th class="p-2">Purpose</th>
+              <th class="p-2">Pitched</th>
+              <th class="p-2">Confirmed</th>
+              <th class="p-2">Dates & Dur.</th>
+              <th class="p-2 font-bold text-emerald-600">Coverage</th>
+              <th class="p-2">Discount</th>
+              <th class="p-2">Cost Int.</th>
+              <th class="p-2">Base GMV</th>
+              <th class="p-2">Base Orders</th>
+              <th class="p-2">Fcst GMV</th>
+              <th class="p-2">Fcst Orders</th>
+              <th class="p-2">Uplift GMV</th>
+              <th class="p-2">Incr. GMV</th>
+              <th class="p-2">Promo Cost</th>
+              <th class="p-2">Budget Spend</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      pendingPromosList.forEach(function (promo, idx) {
+
+        let discountText = promo.discount != null ? promo.discount + '%' : '';
+        if (promo.bppDiscount) {
+          discountText += ' (BPP: ' + promo.bppDiscount + '%)';
+        }
+
+        html += `
+          <tr class="border-b hover:bg-gray-50 text-xs">
+            <td class="p-2 sticky left-0 bg-white z-10 whitespace-nowrap">
+              <div class="flex items-center space-x-1">
+                <button
+                  type="button"
+                  onclick="openDetailsModalByRowIndex(${Number(promo.rowIndex)})"
+                  class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Details
+                </button>
+
+                <button
+                  type="button"
+                  onclick="openEditModalByRowIndex(${Number(promo.rowIndex)})"
+                  class="bg-gray-200 hover:bg-gray-300 text-black px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  onclick="deletePromo(${Number(promo.rowIndex)}, false)"
+                  class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Delete
+                </button>
+
+                ${isAdmin ? `
+                <button
+                  type="button"
+                  onclick="approvePromo(${Number(promo.rowIndex)})"
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Approve
+                </button>
+
+                <button
+                  type="button"
+                  onclick="rejectPromo(${Number(promo.rowIndex)})"
+                  class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Reject
+                </button>
+                ` : ''}
+              </div>
+            </td>
+
+            <td class="p-2 font-bold">${escapeHtml(promo.partnerName)}</td>
+            <td class="p-2 font-mono text-[10px]">${escapeHtml(promo.storeAddressId)}</td>
+            <td class="p-2 text-gray-500">${escapeHtml(promo.am)}</td>
+            <td class="p-2">${escapeHtml(promo.promoPurpose)}</td>
+            <td class="p-2 font-semibold">${escapeHtml(promo.pitched)}</td>
+            <td class="p-2 font-semibold">${escapeHtml(promo.confirmed)}</td>
+            <td class="p-2">${escapeHtml(promo.startDate)} - ${escapeHtml(promo.endDate)} (${escapeHtml(promo.duration)}d)</td>
+            <td class="p-2 font-bold text-emerald-600">${escapeHtml(promo.coverage)}</td>
+            <td class="p-2">${escapeHtml(discountText)}</td>
+            <td class="p-2">${escapeHtml(formatTablePercent(promo.costIntensity))}</td>
+            <td class="p-2">${escapeHtml(formatTableMoney(promo.baselineGmv))}</td>
+            <td class="p-2">${escapeHtml(formatTableNumber(promo.baselineOrders))}</td>
+            <td class="p-2 font-semibold">${escapeHtml(formatTableMoney(promo.forecastedGmv))}</td>
+            <td class="p-2">${escapeHtml(formatTableNumber(promo.forecastedOrders))}</td>
+            <td class="p-2">${escapeHtml(formatTableMoney(promo.upliftGmv))}</td>
+            <td class="p-2">${escapeHtml(formatTableMoney(promo.incrementalGmv))}</td>
+            <td class="p-2">${escapeHtml(formatTableMoney(promo.estimatedPromoCost))}</td>
+            <td class="p-2">${escapeHtml(formatTableMoney(promo.estimatedBudgetSpend))}</td>
+          </tr>
+        `;
+
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('pendingTable').innerHTML = html;
+
+    }
+
+
+    /* ========================================================= */
+    /* DETAILS MODAL */
+    /* ========================================================= */
+
+    function formatTableMoney(value) {
+      if (value == null || value === '' || value === '-') return '—';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR';
+    }
+
+    function formatTableNumber(value) {
+      if (value == null || value === '' || value === '-') return '—';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toLocaleString('en-IE', { maximumFractionDigits: 1 });
+    }
+
+    function formatTablePercent(value) {
+      if (value == null || value === '' || value === '-') return '—';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toFixed(1) + '%';
+    }
+
+    function openDetailsModal(promo) {
+
+      if (!promo) return;
+
+      const fields = [
+        ['ID', promo.id],
+        ['Created At', promo.createdAt],
+        ['Status', promo.status],
+        ['Top 3 test or BP budget?', promo.budgetSource],
+        ['Partner Name', promo.partnerName],
+        ['Store Address ID', promo.storeAddressId],
+        ['Promo Purpose', promo.promoPurpose],
+        ['Pitched !!!', promo.pitched],
+        ['Confirmed to activate the promo', promo.confirmed],
+        ['Start Date', promo.startDate],
+        ['End Date', promo.endDate],
+        ['Promo Type', promo.promoType],
+        ['Promo Strategy', promo.promoStrategy],
+        ['Standard discount', formatDetailPercent(promo.discount)],
+        ['BPP discount', formatDetailPercent(promo.bppDiscount)],
+        ['Products on promo', promo.products],
+        ['Co-funding', formatDetailPercent(promo.cofunding)],
+        ['Upload week', promo.uploadWeek],
+        ['Menu Coverage', formatDetailPercent(promo.coverage)],
+        ['Duration (d)', promo.duration],
+        ['Segmentation', promo.segmentation],
+        ['Max Discount', formatDetailPercent(promo.maxDiscount)],
+        ['Matrix Key', promo.matrixKey],
+        ['GMV Uplift Multiplier', formatDetailMultiplier(promo.gmvUpliftMultiplier)],
+        ['Orders Uplift Multiplier', formatDetailMultiplier(promo.ordersUpliftMultiplier)],
+        ['Promo Products Uplift Mult', formatDetailMultiplier(promo.promoProductsUpliftMultiplier)],
+        ['% promo orders', formatDetailPercent(promo.promoOrdersPct)],
+        ['Cost Intensity', formatDetailPercent(promo.costIntensity)],
+        ['Baseline GMV', formatDetailMoney(promo.baselineGmv)],
+        ['Baseline orders', promo.baselineOrders],
+        ['Prime Share', formatDetailPercent(promo.primeShare)],
+        ['Forecasted total GMV', formatDetailMoney(promo.forecastedGmv)],
+        ['Forecasted total orders', promo.forecastedOrders],
+        ['Uplift GMV', formatDetailMoney(promo.upliftGmv)],
+        ['Uplift Orders', promo.upliftOrders],
+        ['Incremental GMV', formatDetailMoney(promo.incrementalGmv)],
+        ['Incremental Orders', promo.incrementalOrders],
+        ['Estimated promo cost', formatDetailMoney(promo.estimatedPromoCost)],
+        ['Estimated Budget Spend', formatDetailMoney(promo.estimatedBudgetSpend)],
+        ['Account Manager', promo.am],
+        ['Upload Person', promo.uploadPerson || promo.am],
+        ['Promo setup by', promo.activationMethod || 'AM'],
+        ['Top 3 test multiplier', formatDetailPercent(promo.top3Multiplier)]
+      ];
+
+      document.getElementById('detailsSubtitle').textContent =
+        (promo.id || '') + ' · ' + (promo.partnerName || '');
+
+      const html = fields.map(function(field) {
+        const label = escapeHtml(field[0]);
+        const value = field[1] == null || field[1] === '' ? '—' : escapeHtml(String(field[1]));
+        const wide = field[0] === 'Products on promo' || field[0] === 'Matrix Key';
+
+        return `
+          <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 ${wide ? 'md:col-span-2 lg:col-span-3' : ''}">
+            <div class="text-[9px] uppercase tracking-wider font-bold text-gray-400 mb-1">${label}</div>
+            <div class="text-xs font-semibold text-gray-800 break-words">${value}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('detailsContent').innerHTML = html;
+
+      const modal = document.getElementById('detailsModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDetailsModal() {
+      const modal = document.getElementById('detailsModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function formatDetailMultiplier(value) {
+      if (value == null || value === '' || value === '-') return value || '';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toFixed(2) + 'x';
+    }
+
+    function formatDetailPercent(value) {
+      if (value == null || value === '' || value === '-') return value || '';
+      return String(value) + '%';
+    }
+
+    function formatDetailMoney(value) {
+      if (value == null || value === '' || value === '-') return value || '';
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      return n.toLocaleString('en-IE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR';
+    }
+
+
+    /* ========================================================= */
+    /* EDIT MODAL PRODUCTS */
+    /* ========================================================= */
+
+    function loadEditProducts(partnerName, preselectedCsv) {
+      editSelectedProductNames = String(preselectedCsv || '')
+        .split(',')
+        .map(function(s) { return s.trim().toLowerCase(); })
+        .filter(Boolean);
+
+      const type = document.getElementById('editPromoType').value;
+      const list = document.getElementById('editProductsList');
+      const loading = document.getElementById('editProductsLoading');
+      const label = document.getElementById('editCoverageLabel');
+
+      if (type === 'BASKET_PERCENTAGE') {
+        editFetchedProducts = [];
+        if (list) list.innerHTML = '<div class="p-3 rounded-lg bg-gray-50 text-xs text-gray-600"><strong>Whole menu applies.</strong></div>';
+        if (label) label.innerText = '100.0%';
+        return;
+      }
+
+      if (!partnerName) {
+        editFetchedProducts = [];
+        if (list) list.innerHTML = '<p class="text-gray-400 p-2">Select a partner first.</p>';
+        if (label) label.innerText = '0.0%';
+        return;
+      }
+
+      if (loading) loading.classList.remove('hidden');
+      if (list) list.innerHTML = '';
+
+      google.script.run
+        .withSuccessHandler(function(products) {
+          if (loading) loading.classList.add('hidden');
+          editFetchedProducts = Array.isArray(products) ? products : [];
+          renderEditProducts();
+        })
+        .withFailureHandler(function(err) {
+          if (loading) loading.classList.add('hidden');
+          handleError(err);
+        })
+        .getPartnerProducts(partnerName);
+    }
+
+    function renderEditProducts() {
+      const list = document.getElementById('editProductsList');
+      if (!list) return;
+
+      if (editFetchedProducts.length === 0) {
+        list.innerHTML = '<p class="text-red-500 p-2">No products found for this partner in BQ.</p>';
+        recalcEditCoverage();
+        return;
+      }
+
+      let html = '';
+
+      editFetchedProducts.forEach(function(product, idx) {
+        const gmvShare = Number(product.gmv_share_pct) || 0;
+        const isChecked = editSelectedProductNames.indexOf(String(product.product_name || '').trim().toLowerCase()) !== -1;
+
+        html += '<label class="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer">' +
+          '<span class="flex items-center gap-2">' +
+          '<input type="checkbox" class="edit-product-check" value="' + idx + '" onchange="recalcEditCoverage()" ' + (isChecked ? 'checked' : '') + '>' +
+          '<span class="font-medium text-gray-800">' + escapeHtml(product.product_name) + '</span>' +
+          '</span>' +
+          '<span class="font-bold text-gray-500">' + gmvShare.toFixed(2) + '% GMV</span>' +
+          '</label>';
+      });
+
+      list.innerHTML = html;
+      recalcEditCoverage();
+    }
+
+    function recalcEditCoverage() {
+      const type = document.getElementById('editPromoType').value;
+      const label = document.getElementById('editCoverageLabel');
+
+      if (type === 'BASKET_PERCENTAGE') {
+        if (label) label.innerText = '100.0%';
+        return;
+      }
+
+      const checks = document.querySelectorAll('.edit-product-check:checked');
+      let total = 0;
+      checks.forEach(function(cb) {
+        const p = editFetchedProducts[Number(cb.value)];
+        if (p) total += Number(p.gmv_share_pct) || 0;
+      });
+
+      if (label) label.innerText = total.toFixed(1) + '%';
+    }
+
+    function getEditSelectedProducts() {
+      const type = document.getElementById('editPromoType').value;
+      if (type === 'BASKET_PERCENTAGE') return 'ALL MENU';
+
+      const checks = document.querySelectorAll('.edit-product-check:checked');
+      const names = [];
+      checks.forEach(function(cb) {
+        const p = editFetchedProducts[Number(cb.value)];
+        if (p) names.push(p.product_name);
+      });
+      return names.join(', ');
+    }
+
+    function getEditCoverageText() {
+      const label = document.getElementById('editCoverageLabel');
+      return label ? label.innerText : '';
+    }
+
+    function onEditPromoTypeChange() {
+      const type = document.getElementById('editPromoType').value;
+      const partnerName = document.getElementById('editPartnerName').value.trim();
+
+      if (type === 'BASKET_PERCENTAGE') {
+        const list = document.getElementById('editProductsList');
+        const label = document.getElementById('editCoverageLabel');
+        if (list) list.innerHTML = '<div class="p-3 rounded-lg bg-gray-50 text-xs text-gray-600"><strong>Whole menu applies.</strong></div>';
+        if (label) label.innerText = '100.0%';
+        return;
+      }
+
+      if (editFetchedProducts.length === 0) {
+        loadEditProducts(partnerName, '');
+      } else {
+        renderEditProducts();
+      }
+    }
+
+
+    /* ========================================================= */
+    /* EDIT MODAL */
+    /* ========================================================= */
+
+    function openEditModal(idx) {
+
+      const promo = pendingPromosList[idx];
+      if (!promo) return;
+
+      document.getElementById('editRowIndex').value = promo.rowIndex || '';
+      document.getElementById('editPartnerName').value = promo.partnerName || '';
+      document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
+      document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+      document.getElementById('editPitched').value = promo.pitched || 'Yes';
+      document.getElementById('editConfirmed').value = promo.confirmed || 'No';
+      document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
+      handleEditActivationMethodChange();
+
+      document.getElementById('editBudgetSource').value = promo.budgetSource || 'Top 3 test';
+      document.getElementById('editStartDate').value = promo.startDate || '';
+      document.getElementById('editEndDate').value = promo.endDate || '';
+      document.getElementById('editPromoType').value = promo.promoType || 'PERCENTAGE_DISCOUNT';
+      document.getElementById('editPromoStrategy').value = promo.promoStrategy || 'Standard';
+      document.getElementById('editDiscount').value = promo.discount || '';
+      document.getElementById('editBppDiscount').value = promo.bppDiscount || '';
+      document.getElementById('editCofunding').value = promo.cofunding || '';
+
+      loadEditProducts(promo.partnerName || '', promo.products || '');
+
+      const modal = document.getElementById('editModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+    }
+
+    // Otwieranie okna edycji dla zatwierdzonych promocji (Tab 3)
+    function openEditApprovedModal(idx) {
+      const promo = approvedPromosList[idx];
+      if (!promo) return;
+
+      document.getElementById('editRowIndex').value = promo.rowIndex || '';
+      document.getElementById('editPartnerName').value = promo.partnerName || '';
+      document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
+      document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+      document.getElementById('editPitched').value = promo.pitched || 'Yes';
+      document.getElementById('editConfirmed').value = promo.confirmed || 'Yes';
+      document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
+      handleEditActivationMethodChange();
+
+      document.getElementById('editBudgetSource').value = promo.budgetSource || 'Top 3 test';
+      document.getElementById('editStartDate').value = promo.startDate || '';
+      document.getElementById('editEndDate').value = promo.endDate || '';
+      document.getElementById('editPromoType').value = promo.promoType || 'PERCENTAGE_DISCOUNT';
+      document.getElementById('editPromoStrategy').value = promo.promoStrategy || 'Standard';
+      document.getElementById('editDiscount').value = promo.discount || '';
+      document.getElementById('editBppDiscount').value = promo.bppDiscount || '';
+      document.getElementById('editCofunding').value = promo.cofunding || '';
+
+      loadEditProducts(promo.partnerName || '', promo.products || '');
+
+      const modal = document.getElementById('editModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveEditModal() {
+
+      const rowIdx = document.getElementById('editRowIndex').value;
+      if (!rowIdx) {
+        alert('Missing promotion row index.');
+        return;
+      }
+
+      const promoType = document.getElementById('editPromoType').value;
+      const products = getEditSelectedProducts();
+
+      if (promoType !== 'BASKET_PERCENTAGE' && !products) {
+        alert('Please select at least one product!');
+        return;
+      }
+
+      const promoData = {
+        partnerName: document.getElementById('editPartnerName').value,
+        storeAddressId: document.getElementById('editStoreAddressId').value,
+        promoPurpose: document.getElementById('editPromoPurpose').value,
+        pitched: document.getElementById('editPitched').value,
+        confirmed: document.getElementById('editConfirmed').value,
+        activationMethod: document.getElementById('editActivationMethod').value,
+        budgetSource: document.getElementById('editBudgetSource').value,
+        startDate: document.getElementById('editStartDate').value,
+        endDate: document.getElementById('editEndDate').value,
+        promoType: promoType,
+        promoStrategy: document.getElementById('editPromoStrategy').value,
+        discount: document.getElementById('editDiscount').value,
+        bppDiscount: document.getElementById('editBppDiscount').value,
+        cofunding: document.getElementById('editCofunding').value,
+        products: products,
+        coverage: getEditCoverageText()
+      };
+
+      google.script.run
+        .withSuccessHandler(function () {
+          alert('Promocja zaktualizowana!');
+          closeEditModal();
+          loadPendingPromos();
+          loadApprovedPromos();
+        })
+        .withFailureHandler(function (err) {
+          alert('Błąd edycji: ' + (err && err.message ? err.message : err));
+        })
+        .updatePromotionDetails(rowIdx, promoData);
+
+    }
+
+
+    /* ========================================================= */
+    /* APPROVE / DELETE / REJECT */
+    /* ========================================================= */
+
+    function approvePromo(rowIndex) {
+      if (!confirm('Are you sure you want to approve this promotion?')) return;
+
+      google.script.run
+        .withSuccessHandler(function () {
+          alert('Approved!');
+          loadPendingPromos();
+        })
+        .withFailureHandler(handleError)
+        .updatePromoStatus(rowIndex, 'APPROVED');
+    }
+
+    function deletePromo(rowIndex, isApproved) {
+      const message = isApproved
+        ? 'Are you sure you want to delete this approved/active promotion?'
+        : 'Are you sure you want to delete this pending promotion?';
+
+      if (!confirm(message)) return;
+
+      google.script.run
+        .withSuccessHandler(function () {
+          alert('Promotion deleted.');
+          if (isApproved) {
+            loadApprovedPromos();
+          } else {
+            loadPendingPromos();
+          }
+        })
+        .withFailureHandler(handleError)
+        .deletePromotion(Number(rowIndex));
+    }
+
+    function rejectPromo(rowIndex) {
+      if (!confirm('Are you sure you want to reject this promotion?')) return;
+
+      google.script.run
+        .withSuccessHandler(function () {
+          alert('Rejected!');
+          loadPendingPromos();
+        })
+        .withFailureHandler(handleError)
+        .updatePromoStatus(rowIndex, 'REJECTED');
+    }
+
+
+    /* ========================================================= */
+    /* APPROVED PROMOS */
+    /* ========================================================= */
+
+    function loadApprovedPromos() {
+      google.script.run
+        .withSuccessHandler(renderApprovedTable)
+        .withFailureHandler(handleError)
+        .getPromotionsByStatus('APPROVED');
+    }
+
+    function renderApprovedTable(promos, preserveSource) {
+
+      if (!preserveSource) {
+        allApprovedPromosList = Array.isArray(promos) ? promos : [];
+        approvedPromosList = allApprovedPromosList.slice();
+      }
+
+      updateApprovedSearchCount();
+
+      if (!Array.isArray(approvedPromosList) || approvedPromosList.length === 0) {
+        document.getElementById('approvedTable').innerHTML =
+          '<p class="text-gray-400 p-2">No approved campaigns found in history.</p>';
+        return;
+      }
+
+      let html = `
+        <table class="w-full text-left border-collapse min-w-max">
+          <thead>
+            <tr class="border-b font-bold text-gray-700 bg-gray-100">
+              <th class="p-2 sticky left-0 bg-gray-100 z-20 whitespace-nowrap">Action</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">ID</th>
+              <th class="p-2">Partner</th>
+              <th class="p-2">AM</th>
+              <th class="p-2">Purpose</th>
+              <th class="p-2">Dates</th>
+              <th class="p-2">Coverage</th>
+              <th class="p-2">Products</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      approvedPromosList.forEach(function (promo, idx) {
+
+        const isRejected = String(promo.status).toUpperCase() === 'REJECTED';
+
+        // Styl dla wiersza odrzuconego (jasnoczerwone tło) lub zwykłego
+        const rowClass = isRejected
+          ? 'border-b bg-red-50/70 hover:bg-red-100/70 text-red-900'
+          : 'border-b hover:bg-gray-50';
+
+        // Badge dla statusu
+        const statusBadge = isRejected
+          ? '<span class="bg-red-200 text-red-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">REJECTED</span>'
+          : '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">APPROVED</span>';
+
+        html += `
+
+          <tr class="${rowClass}">
+
+            <td class="p-2 sticky left-0 ${isRejected ? 'bg-red-50' : 'bg-white'} z-10 whitespace-nowrap">
+              <div class="flex items-center space-x-1">
+
+                <button
+                  type="button"
+                  onclick="openDetailsModalByRowIndex(${Number(promo.rowIndex)})"
+                  class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Details
+                </button>
+
+                <button
+                  type="button"
+                  onclick="openEditModalByRowIndex(${Number(promo.rowIndex)})"
+                  class="bg-gray-200 hover:bg-gray-300 text-black px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  onclick="deletePromo(${Number(promo.rowIndex)}, true)"
+                  class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold"
+                >
+                  Delete
+                </button>
+
+              </div>
+            </td>
+
+            <td class="p-2">
+              ${statusBadge}
+            </td>
+
+            <td class="p-2 font-mono text-[10px]">${escapeHtml(promo.id)}</td>
+            <td class="p-2 font-bold">${escapeHtml(promo.partnerName)}</td>
+            <td class="p-2">${escapeHtml(promo.am)}</td>
+            <td class="p-2">${escapeHtml(promo.promoPurpose)}</td>
+            <td class="p-2">${escapeHtml(promo.startDate)} to ${escapeHtml(promo.endDate)}</td>
+            <td class="p-2 font-bold text-emerald-600">${escapeHtml(promo.coverage)}</td>
+            <td class="p-2 text-gray-500 text-[10px]">${escapeHtml(promo.products)}</td>
+
+          </tr>
+
+        `;
+
+      });
+
+      html += `
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('approvedTable').innerHTML = html;
+
+    }
+
+
+    /* ========================================================= */
+    /* PARTNER REQUEST (TAB 5) */
+    /* ========================================================= */
+
+    function submitPartnerRequestForm() {
+
+      const partnerName = document.getElementById('reqPartnerName').value.trim();
+      const sfId = document.getElementById('reqSfId').value.trim();
+
+      if (!partnerName) {
+        alert('Wpisz nazwę partnera!');
+        return;
+      }
+
+      if (!sfId) {
+        alert('Wpisz Store Address ID!');
+        return;
+      }
+
+      const requestData = {
+        type: document.getElementById('reqType').value,
+        partnerName: partnerName,
+        sfId: sfId,
+        region: document.getElementById('reqRegion').value.trim(),
+        comments: document.getElementById('reqComments').value.trim()
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          alert(
+            'Zgłoszenie wysłane pomyślnie z ID: ' +
+            (res && res.id ? res.id : '') +
+            '! Oliwia otrzymała powiadomienie.'
+          );
+
+          document.getElementById('reqPartnerName').value = '';
+          document.getElementById('reqSfId').value = '';
+          document.getElementById('reqRegion').value = '';
+          document.getElementById('reqComments').value = '';
+        })
+        .withFailureHandler(function (err) {
+          alert('Błąd wysyłania zgłoszenia: ' + (err && err.message ? err.message : err));
+        })
+        .submitPartnerRequest(requestData);
+
+    }
+
+
+    /* ========================================================= */
+    /* RESET FORM */
+    /* ========================================================= */
+
+    function resetForm() {
+
+      setSubmitPromoLoading(false);
+
+      document.getElementById('partnerInput').value = '';
+      document.getElementById('storeAddressSelect').innerHTML = '<option value="ALL">ALL - Whole Chain</option>';
+      document.getElementById('productsList').innerHTML = '<p class="text-gray-400 p-2">Select a partner above to fetch Bestsellers.</p>';
+      document.getElementById('coverageGauge').innerText = '0.0%';
+      document.getElementById('coverageGauge').className = 'text-4xl font-black text-black';
+      document.getElementById('coverageStatus').innerText = 'Waiting for products...';
+      document.getElementById('coverageStatus').className = 'text-xs font-bold text-gray-400 uppercase';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('endDate').disabled = false;
+      document.getElementById('endDate').classList.remove('bg-gray-100');
+
+      const multipleCampaigns = document.getElementById('multipleCampaigns');
+      if (multipleCampaigns) multipleCampaigns.checked = false;
+
+      const multipleCampaignPanel = document.getElementById('multipleCampaignPanel');
+      if (multipleCampaignPanel) multipleCampaignPanel.classList.add('hidden');
+
+      const campaignRows = document.getElementById('campaignRows');
+      if (campaignRows) campaignRows.innerHTML = '';
+
+      campaignProductSelections = [[], [], [], []];
+
+      document.getElementById('discount').value = '';
+      document.getElementById('bppDiscount').value = '';
+      document.getElementById('cofunding').value = '';
+      document.getElementById('promoStrategy').value = 'Standard';
+      document.getElementById('pitched').value = 'Yes';
+
+      toggleBppInput();
+      fetchedProducts = [];
+
+    }
+
+
+    /* ========================================================= */
+    /* HTML ESCAPE */
+    /* ========================================================= */
+
+    function escapeHtml(value) {
+
+      if (value === null || value === undefined) {
+        return '';
+      }
+
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    }
+
+
+    /* ========================================================= */
+    /* CLOSE MODAL ON BACKDROP CLICK */
+    /* ========================================================= */
+
+    document
+      .getElementById('editModal')
+      .addEventListener('click', function (event) {
+        if (event.target === this) {
+          closeEditModal();
+        }
+      });
+
+  /* ========================================================= */
+    /* CLOSE MODAL ON BACKDROP CLICK */
+    /* ========================================================= */
+
+    document
+      .getElementById('editModal')
+      .addEventListener('click', function (event) {
+        if (event.target === this) {
+          closeEditModal();
+        }
+      });
+
+
+/* ========================================================= */
+/* BEZPIECZNE WYSZUKIWANIE PROMOCJI PO ROWINDEX (FIX)       */
+/* ========================================================= */
+
+// Wyszukuje promocję w dowolnej z dwóch tablic po jej rowIndex
+function findPromoByRowIndex(rowIndex) {
+  const rIdx = Number(rowIndex);
+  let promo = pendingPromosList.find(p => Number(p.rowIndex) === rIdx);
+  if (!promo) {
+    promo = approvedPromosList.find(p => Number(p.rowIndex) === rIdx);
+  }
+  if (!promo) {
+    promo = allPendingPromosList.find(p => Number(p.rowIndex) === rIdx);
+  }
+  if (!promo) {
+    promo = allApprovedPromosList.find(p => Number(p.rowIndex) === rIdx);
+  }
+  return promo;
+}
+
+// Otwiera modal z detalami na podstawie rowIndex
+function openDetailsModalByRowIndex(rowIndex) {
+  const promo = findPromoByRowIndex(rowIndex);
+  if (!promo) {
+    alert('Nie znaleziono danych dla wybranej promocji (rowIndex: ' + rowIndex + '). Spróbuj odświeżyć stronę.');
+    return;
+  }
+  openDetailsModal(promo);
+}
+
+// Otwiera modal edycji na podstawie rowIndex
+function openEditModalByRowIndex(rowIndex) {
+  const promo = findPromoByRowIndex(rowIndex);
+  if (!promo) {
+    alert('Nie znaleziono danych do edycji (rowIndex: ' + rowIndex + '). Spróbuj odświeżyć stronę.');
+    return;
+  }
+
+  document.getElementById('editRowIndex').value = promo.rowIndex || '';
+  document.getElementById('editPartnerName').value = promo.partnerName || '';
+  document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
+  document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+  document.getElementById('editPitched').value = promo.pitched || 'Yes';
+  document.getElementById('editConfirmed').value = promo.confirmed || 'No';
+  document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
+
+  if (typeof handleEditActivationMethodChange === 'function') {
+    handleEditActivationMethodChange();
+  }
+
+  document.getElementById('editBudgetSource').value = promo.budgetSource || 'Top 3 test';
+  document.getElementById('editStartDate').value = promo.startDate || '';
+  document.getElementById('editEndDate').value = promo.endDate || '';
+  document.getElementById('editPromoType').value = promo.promoType || 'PERCENTAGE_DISCOUNT';
+  document.getElementById('editPromoStrategy').value = promo.promoStrategy || 'Standard';
+  document.getElementById('editDiscount').value = promo.discount || '';
+  document.getElementById('editBppDiscount').value = promo.bppDiscount || '';
+  document.getElementById('editCofunding').value = promo.cofunding || '';
+
+  loadEditProducts(promo.partnerName || '', promo.products || '');
+
+  const modal = document.getElementById('editModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+</script>
+</body>
+</html>
