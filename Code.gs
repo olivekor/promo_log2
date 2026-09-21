@@ -663,8 +663,11 @@ function updatePromotionDetails(rowIdx, promoData) {
   // 2. Jeśli edytujemy odrzuconą promocję (REJECTED), przywracamy ją do kolejki PENDING
   if (currentStatus === 'REJECTED') {
     sheet.getRange(rowIdx, 3).setValue('PENDING_APPROVAL');
-    sheet.getRange(rowIdx, 9).setValue('Pending'); // Czyszczenie kolumny Confirmed
-  } else if (promoData.confirmed !== undefined) {
+  }
+
+  // Confirmed odzwierciedla wybór AM-a z formularza edycji, również przy
+  // wracaniu z REJECTED do PENDING_APPROVAL.
+  if (promoData.confirmed !== undefined) {
     sheet.getRange(rowIdx, 9).setValue(promoData.confirmed);
   }
 
