@@ -1660,19 +1660,27 @@ function averagePitching_(arr) {
 }
 
 var ALLOWED_AM_EMAILS = [
-  'sebastian.banaszak@glovoapp.com', 'karolina.wojtowicz@glovoapp.com', 'patrycja.braglewiczkijewska@glovoapp.com',
-  'mateusz.glowacki@glovoapp.com', 'yuliia.gabruk@glovoapp.com', 'klaudia.wojtasik@glovoapp.com',
-  'monika.kalecinska@glovoapp.com', 'emilia.tarkowska@glovoapp.com', 'kinga.kuzminska@glovoapp.com',
-  'sylwia.snieg@glovoapp.com', 'patrycja.pszczolkowska@glovoapp.com', 'sandra.rewerspienkowska@glovoapp.com',
-  'karolina.ptaszek@glovoapp.com', 'piotr.jedrysik@glovoapp.com', 'natalia.chuchra@glovoapp.com',
-  'daniela.zalewska@glovoapp.com', 'petro.soia@glovoapp.com', 'jan.gola@glovoapp.com',
-  'izabela.tomczak@glovoapp.com', 'marcelina.kolodziej@glovoapp.com', 'katarzyna.sekowska@glovoapp.com',
-  'lukasz.pluciennik@glovoapp.com', 'mateusz.wojcik@glovoapp.com', 'tomasz.nowak@glovoapp.com',
-  'mateusz.puchalski@glovoapp.com', 'lukasz.smolen@glovoapp.com', 'oskar.popielinski@glovoapp.com',
-  'hanna.dlutek@glovoapp.com', 'maja.plaskocinska@glovoapp.com', 'brian.mbewe@glovoapp.com',
-  'bartosz.bil@glovoapp.com', 'katarzyna.kanigowska@glovoapp.com', 'paulina.jaruminowska@glovoapp.com',
-  'daria.jerzewska@glovoapp.com', 'antonina.nowak@glovoapp.com', 'stanislaw.wozniak@glovoapp.com',
-  'karolina.stanecka@glovoapp.com'
+  'aleksandra.gora@glovoapp.com', 'antonina.nowak@glovoapp.com', 'bartosz.bil@glovoapp.com',
+  'brian.mbewe@glovoapp.com', 'daria.jerzewska@glovoapp.com', 'elzbieta.piechowicz@glovoapp.com',
+  'emilia.kowalinska@glovoapp.com', 'emilia.tarkowska@glovoapp.com', 'hanna.dlutek@glovoapp.com',
+  'hanna.rudnicka@glovoapp.com', 'jakub.graczyk@glovoapp.com', 'jakub.lukasiewicz@glovoapp.com',
+  'jan.gola@glovoapp.com', 'jan.piekarski@glovoapp.com', 'joanna.kluszczynska@glovoapp.com',
+  'joanna.zebrowska@glovoapp.com', 'karolina.ptaszek@glovoapp.com', 'karolina.stanecka@glovoapp.com',
+  'karolina.wojtowicz@glovoapp.com', 'kasia.kwasniak@glovoapp.com', 'katarzyna.kanigowska@glovoapp.com',
+  'katarzyna.sekowska@glovoapp.com', 'kinga.kuzminska@glovoapp.com', 'klaudia.janeczko@glovoapp.com',
+  'klaudia.pisarska@glovoapp.com', 'klaudia.wojtasik@glovoapp.com', 'lukasz.pluciennik@glovoapp.com',
+  'lukasz.smolen@glovoapp.com', 'maja.plaskocinska@glovoapp.com', 'marcelina.kolodziej@glovoapp.com',
+  'marcin.woloszynski@glovoapp.com', 'mateusz.glowacki@glovoapp.com', 'mateusz.mochtak@glovoapp.com',
+  'mateusz.puchalski@glovoapp.com', 'michal.filarski@glovoapp.com', 'michal.siekierski@glovoapp.com',
+  'milosz.grzesinski@glovoapp.com', 'monika.kalecinska@glovoapp.com', 'natalia.chuchra@glovoapp.com',
+  'natalia.sawicka@glovoapp.com', 'natalia.sobczynska@glovoapp.com', 'oskar.popielinski@glovoapp.com',
+  'palina.roinik@glovoapp.com', 'patrycja.braglewiczkijewska@glovoapp.com', 'patrycja.garbinska@glovoapp.com',
+  'patryk.pytlakowski@glovoapp.com', 'paulina.jaruminowska@glovoapp.com', 'petro.soia@glovoapp.com',
+  'piotr.jedrysik@glovoapp.com', 'radoslaw.mazur@glovoapp.com', 'sabina.faron@glovoapp.com',
+  'sandra.rewerspienkowska@glovoapp.com', 'sebastian.banaszak@glovoapp.com', 'stanislaw.wozniak@glovoapp.com',
+  'stanislav.malykhin@glovoapp.com', 'suzan.benka@glovoapp.com', 'sylwia.snieg@glovoapp.com',
+  'tomasz.nowak@glovoapp.com', 'tomasz.piotrowski@glovoapp.com', 'wiktoria.noweta@glovoapp.com',
+  'yuliia.gabruk@glovoapp.com', 'zuzanna.calka@glovoapp.com'
 ];
 /**
  * ============================================================
