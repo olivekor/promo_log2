@@ -586,6 +586,8 @@ function submitPromotionToMasterLog(promoData) {
   var createdAt = Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd HH:mm");
   var nextRow = sheet.getLastRow() + 1;
 
+  var partnerMaster = findPartnerMaster_(promoData.partnerName, getPartnersMasterData_());
+
   var baseValues = new Array(43).fill('');
   baseValues[0] = id;
   baseValues[1] = createdAt;
@@ -604,6 +606,7 @@ function submitPromotionToMasterLog(promoData) {
   baseValues[14] = getDiscountNumber_(promoData.bppDiscount);
   baseValues[15] = promoData.products;
   baseValues[16] = getDiscountNumber_(promoData.cofunding);
+  baseValues[39] = partnerMaster ? partnerMaster.accountManager : '';
   baseValues[41] = promoData.activationMethod;
   baseValues[40] = '';
   baseValues[42] = userEmail;
@@ -914,6 +917,14 @@ function updatePromoStatus(rowIndex, newStatus) {
       // E-mail pobierany z Upload Person (kolumna AQ - row[42]).
       // Jeśli puste, robi fallback do AM (kolumna AN - row[39]).
       var uploadPersonEmail = String(row[42] || row[39] || '').trim();
+
+      // Ostatni fallback: dla promocji zapisanych zanim kolumna AN (Account
+      // Manager) zaczęła się wypełniać, sprawdzamy AM przypisanego do
+      // partnera na żywo w arkuszu Partners.
+      if (!uploadPersonEmail) {
+        var fallbackPartner = findPartnerMaster_(partnerName, getPartnersMasterData_());
+        uploadPersonEmail = fallbackPartner ? String(fallbackPartner.accountManager || '').trim() : '';
+      }
 
       if (uploadPersonEmail && uploadPersonEmail.indexOf('@') !== -1) {
         var subject = "Promo Log 2.0: Twoja promocja została odrzucona (" + partnerName + ")";
