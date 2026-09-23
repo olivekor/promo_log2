@@ -459,11 +459,13 @@ function calculateMasterLog_(promoData) {
   var typeUpper = String(promoData.promoType || '').trim().toUpperCase();
 
   // Zmienna promoProductsUpliftMult z macierzy (odpowiada kolumnie Z / promoProductsUplift)
-  var promoProductsUpliftMult = mx ? mx.promoProductsUplift : null;
+  // Matryca nie ma tej wartości dla części typów (np. BASKET_PERCENTAGE) — wtedy przyjmujemy 1,
+  // tak samo jak recalculateCostsOnly(), żeby koszt nie wychodził pusty.
+  var promoProductsUpliftMult = mx && mx.promoProductsUplift !== null && mx.promoProductsUplift > 0 ? mx.promoProductsUplift : 1;
 
   if (partner) {
     if (typeUpper === 'PERCENTAGE_DISCOUNT' || typeUpper === 'BASKET_PERCENTAGE') {
-      if (baselineGmv !== null && coverage !== null && promoProductsUpliftMult !== null && standardDiscount !== null && maxDiscount !== null && primeShare !== null) {
+      if (baselineGmv !== null && coverage !== null && standardDiscount !== null && maxDiscount !== null && primeShare !== null) {
         // Zgodnie z formułą: AC * S * Z * ((1 - AE) * J + AE * V)
         estimatedPromoCost = baselineGmv * coverage * promoProductsUpliftMult *
           ((1 - primeShare) * standardDiscount + primeShare * maxDiscount);
