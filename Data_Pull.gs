@@ -557,7 +557,7 @@ function dataPullAddPartnerAMFormula_(sheet, result) {
   // therefore be refreshed together with Partners every week.
   sheet.getRange(2, 13, rowCount, 1).setValues(storeAddressIds);
 
-  var amFormula = '=ARRAYFORMULA(IF(A2:A="","",XLOOKUP(A2:A,IMPORTRANGE("' + DATA_PULL_PARTNER_AM_SOURCE_URL + '","\'PL (adjusted to SMB)\'!D:D"),IMPORTRANGE("' + DATA_PULL_PARTNER_AM_SOURCE_URL + '","\'PL (adjusted to SMB)\'!B:B"),"")))';
+  var amFormula = '=ARRAYFORMULA(IF(A2:A="","",IF(A2:A="Domino\'s Pizza","sebastian.banaszak@glovoapp.com",XLOOKUP(A2:A,IMPORTRANGE("' + DATA_PULL_PARTNER_AM_SOURCE_URL + '","\'PL (adjusted to SMB)\'!D:D"),IMPORTRANGE("' + DATA_PULL_PARTNER_AM_SOURCE_URL + '","\'PL (adjusted to SMB)\'!B:B"),""))))';
   sheet.getRange(2, 10).setFormula(amFormula);
 
   // Match AM email in Partners!J against Teams Exctract!A and return Team from B.
