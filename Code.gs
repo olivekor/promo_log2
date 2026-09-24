@@ -356,9 +356,12 @@ function getDiscountNumber_(value) {
   // UI sends percentages as 20 / 30 / 50.
   // Calculations use decimal fractions: 0.20 / 0.30 / 0.50.
   if (value === null || value === '' || value === undefined) return null;
-  var s = String(value).trim().replace('%', '').replace(',', '.');
+  var raw = String(value).trim();
+  var s = raw.replace('%', '').replace(',', '.');
   var n = Number(s);
   if (isNaN(n)) return null;
+  // "0.8%" is 0.8 %, not 80 %.
+  if (raw.indexOf('%') !== -1) return n / 100;
   return Math.abs(n) > 1 ? n / 100 : n;
 }
 
@@ -480,7 +483,8 @@ function calculateMasterLog_(promoData) {
       forecastedOrders: forecastedOrders,
       standardDiscount: standardDiscount,
       maxDiscount: maxDiscount,
-      primeShare: primeShare
+      primeShare: primeShare,
+      mbs: toNumber_(promoData.mbs)
     });
   }
 
@@ -515,7 +519,11 @@ function calculateMasterLog_(promoData) {
     estimatedPromoCost: estimatedPromoCost,
     estimatedBudgetSpend: estimatedBudgetSpend,
     top3Multiplier: top3Multiplier,
-    matrixLevel: mx ? mx.level : ''
+    matrixLevel: mx ? mx.level : '',
+    matrixN: mx ? mx.n : null,
+    coverageScale: coverageScale,
+    penetration: promoOrdersPct,
+    cofunding: cofunding
   };
 }
 
@@ -536,8 +544,7 @@ function getCoverageScale_(typeUpper, coverage, mx, promoProductsUplift, maxDisc
 }
 
 /**
- * Koszt promocji, jak H5 w arkuszu forecast.
- * Formularz nie ma pola MBS, więc przyjmujemy to, co arkusz robi przy pustym MBS.
+ * Koszt promocji, jak H5 w arkuszu forecast. Puste MBS traktujemy jak arkusz (MBS = 1).
  */
 function estimatePromoCost_(c) {
   var mix = (c.standardDiscount !== null && c.maxDiscount !== null)
@@ -548,7 +555,7 @@ function estimatePromoCost_(c) {
   if (c.type === 'BASKET_PERCENTAGE') {
     if (c.forecastedOrders === null || !c.baselineOrders || c.baselineGmv === null || mix === null) return null;
     var aov = c.baselineGmv / c.baselineOrders;
-    var mbs = 1;
+    var mbs = c.mbs ? c.mbs : 1;
     var qualifyingShare = c.penetration !== null ? c.penetration : Math.pow(Math.min(1, aov / mbs), 1.5);
     return c.forecastedOrders * qualifyingShare * Math.max(aov, mbs) * mix;
   }
@@ -572,6 +579,36 @@ function estimatePromoCost_(c) {
   }
 
   return fallback;
+}
+
+// AR = MBS € (Min. Basket Size), dodane po AQ (Upload Person).
+var MBS_COLUMN = 44;
+
+function ensureMbsColumn_(sheet) {
+  if (sheet.getMaxColumns() < MBS_COLUMN) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), MBS_COLUMN - sheet.getMaxColumns());
+  }
+  var header = sheet.getRange(1, MBS_COLUMN);
+  if (!header.getValue()) header.setValue('MBS €');
+}
+
+/**
+ * Kalkulator forecastu (zakładka Promo Forecast i podgląd w Create Promo).
+ * Liczy to samo co calculateMasterLog_, ale niczego nie zapisuje.
+ */
+function getPromoForecast(promoData) {
+  var calc = calculateMasterLog_(promoData);
+  var cost = calc.estimatedPromoCost;
+  var cofunding = calc.cofunding;
+
+  calc.roi = cost ? calc.upliftGmv / cost : null;
+  calc.paidByGlovo = cost !== null && cofunding !== null ? cost * cofunding : null;
+  calc.paidByPartner = cost !== null && cofunding !== null ? cost * (1 - cofunding) : null;
+  calc.upliftOrdersPct = calc.baselineOrders ? calc.upliftOrders / calc.baselineOrders : null;
+  calc.costPerUpliftOrder = cost !== null && calc.upliftOrders > 0 ? cost / calc.upliftOrders : null;
+  calc.baselineAov = calc.baselineOrders ? calc.baselineGmv / calc.baselineOrders : null;
+  calc.partnerFound = calc.baselineGmv !== null;
+  return calc;
 }
 
 function ensureMasterLogHeader_(sheet) {
@@ -677,6 +714,8 @@ function submitPromotionToMasterLog(promoData) {
   baseValues[42] = userEmail;
 
   sheet.getRange(nextRow, 1, 1, 43).setValues([baseValues]);
+  ensureMbsColumn_(sheet);
+  sheet.getRange(nextRow, MBS_COLUMN).setValue(toNumber_(promoData.mbs) || '');
 
   var calc = calculateMasterLog_(promoData);
   writeCalculatedColumns_(sheet, nextRow, calc);
@@ -754,6 +793,14 @@ function updatePromotionDetails(rowIdx, promoData) {
   if (promoData.products !== undefined) sheet.getRange(rowIdx, 16).setValue(promoData.products);
   sheet.getRange(rowIdx, 17).setValue(getDiscountNumber_(promoData.cofunding));
 
+  // MBS: formularz edycji go nie ma, więc zachowujemy zapisane MBS do przeliczenia.
+  ensureMbsColumn_(sheet);
+  if (promoData.mbs !== undefined) {
+    sheet.getRange(rowIdx, MBS_COLUMN).setValue(toNumber_(promoData.mbs) || '');
+  } else {
+    promoData.mbs = sheet.getRange(rowIdx, MBS_COLUMN).getValue();
+  }
+
   // 4. Przeliczamy na nowo metryki
   var calc = calculateMasterLog_(promoData);
   writeCalculatedColumns_(sheet, rowIdx, calc);
@@ -778,7 +825,8 @@ function masterRowToPromoData_(row) {
     bppDiscount: row[14],
     products: row[15],
     cofunding: row[16],
-    coverage: row[18]
+    coverage: row[18],
+    mbs: row[MBS_COLUMN - 1]
   };
 }
 
@@ -791,7 +839,8 @@ function recalculateAllMasterLog() {
   if (!sheet || sheet.getLastRow() < 2) return { status: 'SUCCESS', rows: 0 };
 
   ensureMasterLogHeader_(sheet);
-  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 42).getValues();
+  ensureMbsColumn_(sheet);
+  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, MBS_COLUMN).getValues();
   var count = 0;
 
   data.forEach(function(row, idx) {
@@ -822,8 +871,9 @@ function recalculateCostsOnly() {
 
   var totalRows = lastRow - 1;
 
-  // Pobieramy zakres od A2 do AQ{lastRow} (43 kolumny)
-  var values = sheet.getRange(2, 1, totalRows, 43).getValues();
+  // Pobieramy zakres od A2 do AR{lastRow} (AR = MBS)
+  ensureMbsColumn_(sheet);
+  var values = sheet.getRange(2, 1, totalRows, MBS_COLUMN).getValues();
 
   var updatesCost = [];
   var updatesSpend = [];
