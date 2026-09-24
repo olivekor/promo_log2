@@ -11,8 +11,7 @@
  *
  * Funkcje ręczne:
  * - refreshPartners()
- * - refreshMatrix()        (startuje query; jeśli nie skończy się w ~4.5 min,
- *                           refreshMatrixCollect() dokończy zapis co 5 min)
+ * - refreshMatrix()
  * - refreshAllReferenceData()
  * - setupDataPullTriggers()
  */
@@ -208,7 +207,6 @@ combined_data AS (
     WHERE s.p_creation_date BETWEEN p.baseline_start AND p.partner_promotion_ended_at
     GROUP BY 1,2,3,4,5,6,7,8,9
 ),
-
 metrics AS (
   SELECT
     segmentation, partner_promotion_type,
@@ -227,68 +225,66 @@ metrics AS (
   FROM combined_data
   WHERE total_store_gmv_during_promo > 0 AND baseline_orders >= 5 AND total_promo_orders_sum > 0
 ),
-
 b_l1 AS (
   SELECT segmentation, partner_promotion_type, depth_bucket,
-    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)]  AS uplift_mult_lo,
+    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)] AS uplift_mult_lo,
     APPROX_QUANTILES(uplift_mult,100)[OFFSET(95)] AS uplift_mult_hi,
-    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)]  AS orders_mult_lo,
+    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)] AS orders_mult_lo,
     APPROX_QUANTILES(orders_mult,100)[OFFSET(95)] AS orders_mult_hi,
-    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)]  AS cost_intensity_lo,
+    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)] AS cost_intensity_lo,
     APPROX_QUANTILES(cost_intensity,100)[OFFSET(95)] AS cost_intensity_hi,
-    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)]  AS cost_per_promo_order_lo,
+    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)] AS cost_per_promo_order_lo,
     APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(95)] AS cost_per_promo_order_hi,
-    APPROX_QUANTILES(penetration,100)[OFFSET(5)]  AS penetration_lo,
+    APPROX_QUANTILES(penetration,100)[OFFSET(5)] AS penetration_lo,
     APPROX_QUANTILES(penetration,100)[OFFSET(95)] AS penetration_hi,
-    APPROX_QUANTILES(roi,100)[OFFSET(5)]  AS roi_lo,
+    APPROX_QUANTILES(roi,100)[OFFSET(5)] AS roi_lo,
     APPROX_QUANTILES(roi,100)[OFFSET(95)] AS roi_hi,
-    APPROX_QUANTILES(coverage,100)[OFFSET(5)]  AS coverage_lo,
+    APPROX_QUANTILES(coverage,100)[OFFSET(5)] AS coverage_lo,
     APPROX_QUANTILES(coverage,100)[OFFSET(95)] AS coverage_hi,
-    APPROX_QUANTILES(prime_share,100)[OFFSET(5)]  AS prime_share_lo,
+    APPROX_QUANTILES(prime_share,100)[OFFSET(5)] AS prime_share_lo,
     APPROX_QUANTILES(prime_share,100)[OFFSET(95)] AS prime_share_hi
   FROM metrics GROUP BY segmentation, partner_promotion_type, depth_bucket
 ),
 b_l2 AS (
   SELECT partner_promotion_type, depth_bucket,
-    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)]  AS uplift_mult_lo,
+    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)] AS uplift_mult_lo,
     APPROX_QUANTILES(uplift_mult,100)[OFFSET(95)] AS uplift_mult_hi,
-    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)]  AS orders_mult_lo,
+    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)] AS orders_mult_lo,
     APPROX_QUANTILES(orders_mult,100)[OFFSET(95)] AS orders_mult_hi,
-    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)]  AS cost_intensity_lo,
+    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)] AS cost_intensity_lo,
     APPROX_QUANTILES(cost_intensity,100)[OFFSET(95)] AS cost_intensity_hi,
-    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)]  AS cost_per_promo_order_lo,
+    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)] AS cost_per_promo_order_lo,
     APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(95)] AS cost_per_promo_order_hi,
-    APPROX_QUANTILES(penetration,100)[OFFSET(5)]  AS penetration_lo,
+    APPROX_QUANTILES(penetration,100)[OFFSET(5)] AS penetration_lo,
     APPROX_QUANTILES(penetration,100)[OFFSET(95)] AS penetration_hi,
-    APPROX_QUANTILES(roi,100)[OFFSET(5)]  AS roi_lo,
+    APPROX_QUANTILES(roi,100)[OFFSET(5)] AS roi_lo,
     APPROX_QUANTILES(roi,100)[OFFSET(95)] AS roi_hi,
-    APPROX_QUANTILES(coverage,100)[OFFSET(5)]  AS coverage_lo,
+    APPROX_QUANTILES(coverage,100)[OFFSET(5)] AS coverage_lo,
     APPROX_QUANTILES(coverage,100)[OFFSET(95)] AS coverage_hi,
-    APPROX_QUANTILES(prime_share,100)[OFFSET(5)]  AS prime_share_lo,
+    APPROX_QUANTILES(prime_share,100)[OFFSET(5)] AS prime_share_lo,
     APPROX_QUANTILES(prime_share,100)[OFFSET(95)] AS prime_share_hi
   FROM metrics GROUP BY partner_promotion_type, depth_bucket
 ),
 b_l3 AS (
   SELECT partner_promotion_type,
-    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)]  AS uplift_mult_lo,
+    APPROX_QUANTILES(uplift_mult,100)[OFFSET(5)] AS uplift_mult_lo,
     APPROX_QUANTILES(uplift_mult,100)[OFFSET(95)] AS uplift_mult_hi,
-    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)]  AS orders_mult_lo,
+    APPROX_QUANTILES(orders_mult,100)[OFFSET(5)] AS orders_mult_lo,
     APPROX_QUANTILES(orders_mult,100)[OFFSET(95)] AS orders_mult_hi,
-    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)]  AS cost_intensity_lo,
+    APPROX_QUANTILES(cost_intensity,100)[OFFSET(5)] AS cost_intensity_lo,
     APPROX_QUANTILES(cost_intensity,100)[OFFSET(95)] AS cost_intensity_hi,
-    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)]  AS cost_per_promo_order_lo,
+    APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(5)] AS cost_per_promo_order_lo,
     APPROX_QUANTILES(cost_per_promo_order,100)[OFFSET(95)] AS cost_per_promo_order_hi,
-    APPROX_QUANTILES(penetration,100)[OFFSET(5)]  AS penetration_lo,
+    APPROX_QUANTILES(penetration,100)[OFFSET(5)] AS penetration_lo,
     APPROX_QUANTILES(penetration,100)[OFFSET(95)] AS penetration_hi,
-    APPROX_QUANTILES(roi,100)[OFFSET(5)]  AS roi_lo,
+    APPROX_QUANTILES(roi,100)[OFFSET(5)] AS roi_lo,
     APPROX_QUANTILES(roi,100)[OFFSET(95)] AS roi_hi,
-    APPROX_QUANTILES(coverage,100)[OFFSET(5)]  AS coverage_lo,
+    APPROX_QUANTILES(coverage,100)[OFFSET(5)] AS coverage_lo,
     APPROX_QUANTILES(coverage,100)[OFFSET(95)] AS coverage_hi,
-    APPROX_QUANTILES(prime_share,100)[OFFSET(5)]  AS prime_share_lo,
+    APPROX_QUANTILES(prime_share,100)[OFFSET(5)] AS prime_share_lo,
     APPROX_QUANTILES(prime_share,100)[OFFSET(95)] AS prime_share_hi
   FROM metrics GROUP BY partner_promotion_type
 ),
-
 matrix_levels AS (
   SELECT
     m.segmentation AS segmentation,
@@ -346,73 +342,35 @@ matrix_levels AS (
     APPROX_QUANTILES(IF(coverage BETWEEN b.coverage_lo AND b.coverage_hi, coverage, NULL),100)[OFFSET(50)] AS coverage,
     APPROX_QUANTILES(IF(prime_share BETWEEN b.prime_share_lo AND b.prime_share_hi, prime_share, NULL),100)[OFFSET(50)] AS prime_share
   FROM metrics m JOIN b_l3 b ON m.partner_promotion_type=b.partner_promotion_type
-  GROUP BY 1,2,3,4
+  GROUP BY 1,2,3
 ),
-
 seg_map AS (
-  SELECT CAST(store_address_id AS STRING) AS store_address_id, ANY_VALUE(segmentation) AS segmentation
+  SELECT CAST(store_id AS STRING) AS store_id, ANY_VALUE(segmentation) AS segmentation
   FROM \`fulfillment-dwh-production.curated_data_shared_glovo.promos_okr__promos_okr_tracker_v2\`
   WHERE country_code = 'PL' AND segmentation <> 'Q-Commerce'
   GROUP BY 1
 ),
-
--- ============================================================
--- ZMIANA #1 (2026-09): mapowanie produktu z promocji na nazwe.
--- Do ~06.2025 tabela store_products ma product_id, od ~07.2025
--- product_id jest puste, a produkt jest w store_product_id.
--- Dlatego nazwe bierzemy z dwoch zrodel:
---   product_id       -> bought_products_looker (stare promocje)
---   store_product_id -> bought_products_v3     (nowe promocje)
--- Oba slowniki sa zawezone do produktow wystepujacych w promocjach.
--- ============================================================
-promo_products_raw AS (
-  SELECT sp.partner_promotion_store_id, sp.product_id, sp.store_product_id
-  FROM \`fulfillment-dwh-production.curated_data_shared_glovo.discounts__discounts_partner_promotion_store_products\` sp
-  WHERE sp.is_valid = TRUE
-    AND (sp.product_id IS NOT NULL OR sp.store_product_id IS NOT NULL)
-),
-product_id_to_name AS (
-  SELECT product_id, ANY_VALUE(product_name) AS product_name
-  FROM \`fulfillment-dwh-production.curated_data_shared_glovo.bought_products_looker__bought_products\`
-  WHERE order_country_code = 'PL' AND product_name IS NOT NULL
-    AND p_creation_date >= '2024-04-01'
-    AND product_id IN (SELECT DISTINCT product_id FROM promo_products_raw WHERE product_id IS NOT NULL)
-  GROUP BY product_id
-),
-store_product_to_name AS (
-  SELECT store_product_id, ANY_VALUE(product_name) AS product_name
-  FROM \`fulfillment-dwh-production.curated_data_shared_glovo.bought_products__bought_products_v3\`
-  WHERE p_creation_date >= '2025-05-01' AND product_name IS NOT NULL
-    AND store_product_id IN (SELECT DISTINCT store_product_id FROM promo_products_raw WHERE store_product_id IS NOT NULL)
-  GROUP BY store_product_id
-),
-
--- ============================================================
--- ZMIANA #2: promo_set po product_name (jak wczesniej), ale nazwa
--- z product_id LUB store_product_id; dodany TWO_FOR_ONE.
--- ============================================================
 promo_set AS (
   SELECT DISTINCT
     ps.partner_promotion_id,
     CAST(pa.store_address_id AS STRING) AS store_address_id,
-    COALESCE(n_old.product_name, n_new.product_name) AS product_name,
+    sp.product_id,
     DATE(pp.partner_promotion_started_at) AS promo_start,
-    DATE(pp.partner_promotion_ended_at)   AS promo_end,
+    DATE(pp.partner_promotion_ended_at) AS promo_end,
     pp.partner_promotion_type,
     pp.partner_promotion_pct
   FROM \`fulfillment-dwh-production.curated_data_shared_glovo.discounts__discounts_partner_promotion_stores\` ps
   JOIN \`fulfillment-dwh-production.curated_data_shared_glovo.discounts__discounts_partner_promotion_store_addresses\` pa
     ON pa.partner_promotion_store_id = ps.partner_promotion_store_id
-  JOIN promo_products_raw sp
+  JOIN \`fulfillment-dwh-production.curated_data_shared_glovo.discounts__discounts_partner_promotion_store_products\` sp
     ON sp.partner_promotion_store_id = ps.partner_promotion_store_id
+   AND sp.is_valid = TRUE
   JOIN \`fulfillment-dwh-production.curated_data_shared_glovo.discounts__discounts_partner_promotions\` pp
     ON pp.partner_promotion_id = ps.partner_promotion_id
-  LEFT JOIN product_id_to_name    n_old ON n_old.product_id = sp.product_id
-  LEFT JOIN store_product_to_name n_new ON n_new.store_product_id = sp.store_product_id
   WHERE DATE(pp.partner_promotion_started_at) >= '2024-05-01'
-    AND DATE(pp.partner_promotion_ended_at)  <  CURRENT_DATE()
-    AND pp.partner_promotion_type IN ('PERCENTAGE_DISCOUNT','BASKET_PERCENTAGE','TWO_FOR_ONE')
-    AND COALESCE(n_old.product_name, n_new.product_name) IS NOT NULL
+    AND DATE(pp.partner_promotion_ended_at) < CURRENT_DATE()
+    AND pp.partner_promotion_type IN ('PERCENTAGE_DISCOUNT','BASKET_PERCENTAGE')
+    AND sp.product_id IS NOT NULL
 ),
 windows AS (
   SELECT *,
@@ -420,24 +378,17 @@ windows AS (
     DATE_SUB(promo_start, INTERVAL 1 DAY) AS base_end
   FROM promo_set
 ),
-
--- ============================================================
--- ZMIANA #3: JOIN do bought_products po product_name,
--- nie po product_id -> lapie sprzedaz zarejestrowana pod
--- promocyjnym/wariantowym SKU
--- ============================================================
 prod_sales AS (
   SELECT
     w.partner_promotion_id, w.store_address_id, w.partner_promotion_type, w.partner_promotion_pct,
     SUM(IF(bp.p_creation_date BETWEEN w.promo_start AND w.promo_end, bp.quantity_delivered_decimal, 0)) AS promo_qty,
-    SUM(IF(bp.p_creation_date BETWEEN w.base_start  AND w.base_end,  bp.quantity_delivered_decimal, 0)) AS base_qty
+    SUM(IF(bp.p_creation_date BETWEEN w.base_start AND w.base_end, bp.quantity_delivered_decimal, 0)) AS base_qty
   FROM windows w
   JOIN \`fulfillment-dwh-production.curated_data_shared_glovo.bought_products_looker__bought_products\` bp
     ON CAST(bp.store_address_id AS STRING) = w.store_address_id
-   AND bp.product_name = w.product_name
+   AND bp.product_id = w.product_id
    AND bp.order_country_code = 'PL'
    AND bp.p_creation_date BETWEEN w.base_start AND w.promo_end
-  WHERE bp.p_creation_date >= '2024-03-01'
   GROUP BY 1,2,3,4
 ),
 pp_metrics AS (
@@ -448,35 +399,32 @@ pp_metrics AS (
          WHEN s.partner_promotion_pct <= 15 THEN '1-15' WHEN s.partner_promotion_pct <= 20 THEN '16-20'
          WHEN s.partner_promotion_pct <= 25 THEN '21-25' WHEN s.partner_promotion_pct <= 30 THEN '26-30'
          WHEN s.partner_promotion_pct <= 40 THEN '31-40' ELSE '41+' END AS depth_bucket,
-    SAFE_DIVIDE(s.promo_qty, NULLIF(s.base_qty,0)) AS pp_uplift,
-    IF(s.promo_qty = 0, 1, 0) AS is_zero_promo_qty   -- flaga jakosci danych do monitoringu
+    SAFE_DIVIDE(s.promo_qty, NULLIF(s.base_qty,0)) AS pp_uplift
   FROM prod_sales s
   LEFT JOIN seg_map sm ON sm.store_address_id = s.store_address_id
   WHERE s.base_qty > 0
 ),
 pp_b1 AS (
   SELECT segmentation, partner_promotion_type, depth_bucket,
-    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)]  AS lo,
+    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)] AS lo,
     APPROX_QUANTILES(pp_uplift,100)[OFFSET(95)] AS hi
   FROM pp_metrics GROUP BY 1,2,3
 ),
 pp_b2 AS (
   SELECT partner_promotion_type, depth_bucket,
-    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)]  AS lo,
+    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)] AS lo,
     APPROX_QUANTILES(pp_uplift,100)[OFFSET(95)] AS hi
   FROM pp_metrics GROUP BY 1,2
 ),
 pp_b3 AS (
   SELECT partner_promotion_type,
-    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)]  AS lo,
+    APPROX_QUANTILES(pp_uplift,100)[OFFSET(5)] AS lo,
     APPROX_QUANTILES(pp_uplift,100)[OFFSET(95)] AS hi
   FROM pp_metrics GROUP BY 1
 ),
 pp_seg AS (
   SELECT m.segmentation, m.partner_promotion_type, m.depth_bucket,
-    APPROX_QUANTILES(IF(m.pp_uplift BETWEEN b.lo AND b.hi, m.pp_uplift, NULL),100)[OFFSET(50)] AS pp_uplift,
-    COUNT(*) AS pp_n,
-    ROUND(AVG(m.is_zero_promo_qty), 3) AS pp_pct_zero_promo_qty
+    APPROX_QUANTILES(IF(m.pp_uplift BETWEEN b.lo AND b.hi, m.pp_uplift, NULL),100)[OFFSET(50)] AS pp_uplift
   FROM pp_metrics m JOIN pp_b1 b USING (segmentation, partner_promotion_type, depth_bucket)
   GROUP BY 1,2,3
 ),
@@ -492,74 +440,20 @@ pp_type AS (
   FROM pp_metrics m JOIN pp_b3 b USING (partner_promotion_type)
   GROUP BY 1
 )
-
 SELECT
   CONCAT(ml.segmentation,'|',ml.partner_promotion_type,'|',ml.depth_bucket) AS key,
   ml.segmentation, ml.partner_promotion_type, ml.depth_bucket, ml.level, ml.n,
   ml.uplift_mult, ml.uplift_p25, ml.uplift_p75, ml.orders_mult,
   ml.cost_intensity, ml.cost_per_promo_order, ml.penetration, ml.roi, ml.coverage, ml.prime_share,
-  COALESCE(pp_seg.pp_uplift, pp_td.pp_uplift, pp_type.pp_uplift) AS promo_products_uplift_multiplier,
-  pp_seg.pp_n AS pp_sample_size,                        -- do wglądu: ile obserwacji stoi za liczbą
-  pp_seg.pp_pct_zero_promo_qty AS pp_pct_zero_promo_qty  -- do wglądu: % wierszy z promo_qty=0 (monitoring jakości danych)
+  COALESCE(pp_seg.pp_uplift, pp_td.pp_uplift, pp_type.pp_uplift) AS promo_products_uplift_multiplier
 FROM matrix_levels ml
-LEFT JOIN pp_seg  ON pp_seg.segmentation = ml.segmentation
-                 AND pp_seg.partner_promotion_type = ml.partner_promotion_type
-                 AND pp_seg.depth_bucket = ml.depth_bucket
-LEFT JOIN pp_td   ON pp_td.partner_promotion_type = ml.partner_promotion_type
-                 AND pp_td.depth_bucket = ml.depth_bucket
+LEFT JOIN pp_seg ON pp_seg.segmentation = ml.segmentation
+                AND pp_seg.partner_promotion_type = ml.partner_promotion_type
+                AND pp_seg.depth_bucket = ml.depth_bucket
+LEFT JOIN pp_td ON pp_td.partner_promotion_type = ml.partner_promotion_type
+                AND pp_td.depth_bucket = ml.depth_bucket
 LEFT JOIN pp_type ON pp_type.partner_promotion_type = ml.partner_promotion_type
 ORDER BY ml.partner_promotion_type, ml.segmentation, ml.depth_bucket`;
-
-function dataPullStartJob_(query, label) {
-  var request = BigQuery.newQueryRequest();
-  request.query = query;
-  request.useLegacySql = false;
-  request.timeoutMs = 10000;
-
-  var result = BigQuery.Jobs.query(request, DATA_PULL_PROJECT_ID);
-  var jobId = result.jobReference && result.jobReference.jobId;
-  if (!jobId) throw new Error(label + ': BigQuery did not return a job ID.');
-  return jobId;
-}
-
-/**
- * Zwraca 'RUNNING' albo 'DONE'; przy błędzie BigQuery rzuca wyjątek.
- */
-function dataPullJobState_(jobId, label) {
-  var job = BigQuery.Jobs.get(DATA_PULL_PROJECT_ID, jobId);
-  var state = job.status && job.status.state;
-  if (state !== 'DONE') return 'RUNNING';
-  if (job.status.errorResult) throw new Error(label + ': ' + JSON.stringify(job.status.errorResult));
-  return 'DONE';
-}
-
-function dataPullFetchResults_(jobId) {
-  var allRows = [];
-  var pageToken = null;
-  var schema = null;
-
-  do {
-    var options = {maxResults: 10000};
-    if (pageToken) options.pageToken = pageToken;
-
-    var page = BigQuery.Jobs.getQueryResults(DATA_PULL_PROJECT_ID, jobId, options);
-    if (!schema && page.schema) schema = page.schema;
-    allRows = allRows.concat(page.rows || []);
-    pageToken = page.pageToken || null;
-  } while (pageToken);
-
-  var headers = (schema && schema.fields ? schema.fields : []).map(function(field) {
-    return field.name;
-  });
-
-  var values = allRows.map(function(row) {
-    return row.f.map(function(cell) {
-      return cell && cell.v !== undefined ? cell.v : null;
-    });
-  });
-
-  return {headers: headers, values: values, jobId: jobId};
-}
 
 function dataPullRunBigQuery_(query, label) {
   var request = BigQuery.newQueryRequest();
@@ -625,16 +519,16 @@ function dataPullAddPartnerAMFormula_(sheet, result) {
   // K = original Team matched by AM email from Teams Exctract.
   // L = normalized Team Group used by Pitching Overview:
   //     Big Chain / Regions / SMB.
-  // M = Store ID(s) from the Partners BigQuery source.
+  // M = Store Address ID(s) from the Partners BigQuery source.
   //
   // IMPORTANT:
   // The Partners query is at Partner/brand level, so a partner can have
-  // multiple Store IDs. M therefore contains a comma-separated list
-  // of all Store IDs belonging to that Partner.
+  // multiple Store Address IDs. M therefore contains a comma-separated list
+  // of all Store Address IDs belonging to that Partner.
   var maxRows = sheet.getMaxRows();
   var rowCount = result && result.values ? result.values.length : 0;
 
-  // The 10th query column is store_id (STRING_AGG). Keep it before J-L are rebuilt.
+  // The 10th query column is store_address_id. Keep it before J-L are rebuilt.
   var storeAddressIds = [];
   for (var i = 0; i < rowCount; i++) {
     storeAddressIds.push([result.values[i][9] || '']);
@@ -652,13 +546,13 @@ function dataPullAddPartnerAMFormula_(sheet, result) {
   sheet.getRange(1, 12).setValue('Team Group').setFontWeight('bold');
   if (maxRows > 1) sheet.getRange(2, 12, maxRows - 1, 1).clearContent();
 
-  // M = Store ID(s)
-  sheet.getRange(1, 13).setValue('store_id').setFontWeight('bold');
+  // M = Store Address ID(s)
+  sheet.getRange(1, 13).setValue('store_address_id').setFontWeight('bold');
   if (maxRows > 1) sheet.getRange(2, 13, maxRows - 1, 1).clearContent();
 
   if (!rowCount) return;
 
-  // Write Store ID(s) as VALUES, not a formula.
+  // Write Store Address ID(s) as VALUES, not a formula.
   // This column comes directly from the BigQuery Partners source and will
   // therefore be refreshed together with Partners every week.
   sheet.getRange(2, 13, rowCount, 1).setValues(storeAddressIds);
@@ -698,10 +592,6 @@ function dataPullWriteTable_(sheetName, result) {
   sheet.clearFormats();
 
   sheet.getRange(1, 1, 1, result.headers.length).setValues([result.headers]);
-  if (sheetName === DATA_PULL_MATRIX_SHEET && result.values.length) {
-    // depth_bucket ("1-15", "16-20"...) must stay text, otherwise Sheets converts it to a date.
-    sheet.getRange(2, 4, result.values.length, 1).setNumberFormat('@');
-  }
   if (result.values.length) {
     sheet.getRange(2, 1, result.values.length, result.headers.length).setValues(result.values);
   }
@@ -753,84 +643,19 @@ function refreshPartners() {
   }
 }
 
-var DATA_PULL_MATRIX_JOB_PROPERTY = 'DATA_PULL_MATRIX_JOB_ID';
-
-/**
- * Matrix query is heavy and can run longer than Apps Script's 6-minute limit.
- * refreshMatrix() starts the BigQuery job and waits up to ~4.5 min. If the job
- * is still running, it schedules refreshMatrixCollect() every 5 minutes, which
- * writes the Matrix as soon as the job is done. BigQuery keeps running the job
- * even after this script execution ends.
- */
 function refreshMatrix() {
   var label = 'Matrix';
   try {
-    var jobId = dataPullStartJob_(DATA_PULL_MATRIX_QUERY, label);
-    PropertiesService.getScriptProperties().setProperty(DATA_PULL_MATRIX_JOB_PROPERTY, jobId);
-    dataPullLog_(label, 'RUNNING', 0, 'BigQuery job started.', jobId);
-
-    var started = Date.now();
-    while (Date.now() - started < 270000) {
-      if (dataPullJobState_(jobId, label) === 'DONE') {
-        return dataPullFinishMatrix_(jobId);
-      }
-      Utilities.sleep(10000);
-    }
-
-    dataPullScheduleMatrixCollect_();
-    dataPullLog_(label, 'RUNNING', 0, 'Still running in BigQuery. refreshMatrixCollect() will write it when done.', jobId);
-    return {status: 'RUNNING', jobId: jobId};
+    var result = dataPullRunBigQuery_(DATA_PULL_MATRIX_QUERY, label);
+    dataPullWriteTable_(DATA_PULL_MATRIX_SHEET, result);
+    dataPullLog_(label, 'SUCCESS', result.values.length, 'Matrix refreshed successfully.', result.jobId);
+    CacheService.getScriptCache().remove('PROMO_LOG_MATRIX_MASTER_SHEET');
+    Logger.log('Matrix refreshed: ' + result.values.length + ' rows. Job: ' + result.jobId);
+    return {status:'SUCCESS', rows:result.values.length, jobId:result.jobId};
   } catch (err) {
-    PropertiesService.getScriptProperties().deleteProperty(DATA_PULL_MATRIX_JOB_PROPERTY);
     dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err));
     throw err;
   }
-}
-
-function refreshMatrixCollect() {
-  var label = 'Matrix';
-  var props = PropertiesService.getScriptProperties();
-  var jobId = props.getProperty(DATA_PULL_MATRIX_JOB_PROPERTY);
-  if (!jobId) {
-    dataPullDeleteMatrixCollect_();
-    return {status: 'NO_JOB'};
-  }
-
-  try {
-    if (dataPullJobState_(jobId, label) !== 'DONE') {
-      dataPullLog_(label, 'RUNNING', 0, 'Still running in BigQuery.', jobId);
-      return {status: 'RUNNING', jobId: jobId};
-    }
-    return dataPullFinishMatrix_(jobId);
-  } catch (err) {
-    props.deleteProperty(DATA_PULL_MATRIX_JOB_PROPERTY);
-    dataPullDeleteMatrixCollect_();
-    dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err), jobId);
-    throw err;
-  }
-}
-
-function dataPullFinishMatrix_(jobId) {
-  var label = 'Matrix';
-  var result = dataPullFetchResults_(jobId);
-  dataPullWriteTable_(DATA_PULL_MATRIX_SHEET, result);
-  PropertiesService.getScriptProperties().deleteProperty(DATA_PULL_MATRIX_JOB_PROPERTY);
-  dataPullDeleteMatrixCollect_();
-  dataPullLog_(label, 'SUCCESS', result.values.length, 'Matrix refreshed successfully.', jobId);
-  CacheService.getScriptCache().remove('PROMO_LOG_MATRIX_MASTER_SHEET');
-  Logger.log('Matrix refreshed: ' + result.values.length + ' rows. Job: ' + jobId);
-  return {status: 'SUCCESS', rows: result.values.length, jobId: jobId};
-}
-
-function dataPullScheduleMatrixCollect_() {
-  dataPullDeleteMatrixCollect_();
-  ScriptApp.newTrigger('refreshMatrixCollect').timeBased().everyMinutes(5).create();
-}
-
-function dataPullDeleteMatrixCollect_() {
-  ScriptApp.getProjectTriggers().forEach(function(trigger) {
-    if (trigger.getHandlerFunction() === 'refreshMatrixCollect') ScriptApp.deleteTrigger(trigger);
-  });
 }
 
 function refreshAllReferenceData() {
