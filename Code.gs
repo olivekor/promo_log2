@@ -247,7 +247,17 @@ function checkIsAdmin() {
 var PARTNERS_REFERENCE_SHEET = 'Partners';
 var MATRIX_REFERENCE_SHEET = 'Matrix';
 
+// Pamięć na czas jednego wykonania skryptu: przy przeliczaniu wielu wierszy
+// nie czytamy Partners/Matrix z cache dla każdego wiersza osobno.
+var REFERENCE_DATA_MEMO_ = {};
+
 function getPartnersMasterData_() {
+  if (REFERENCE_DATA_MEMO_.partners) return REFERENCE_DATA_MEMO_.partners;
+  REFERENCE_DATA_MEMO_.partners = loadPartnersMasterData_();
+  return REFERENCE_DATA_MEMO_.partners;
+}
+
+function loadPartnersMasterData_() {
   var cache = CacheService.getScriptCache();
   var cached = cache.get('PROMO_LOG_PARTNERS_MASTER_SHEET');
   if (cached) return JSON.parse(cached);
@@ -276,6 +286,12 @@ function getPartnersMasterData_() {
 }
 
 function getMatrixMasterData_() {
+  if (REFERENCE_DATA_MEMO_.matrix) return REFERENCE_DATA_MEMO_.matrix;
+  REFERENCE_DATA_MEMO_.matrix = loadMatrixMasterData_();
+  return REFERENCE_DATA_MEMO_.matrix;
+}
+
+function loadMatrixMasterData_() {
   var cache = CacheService.getScriptCache();
   var cached = cache.get('PROMO_LOG_MATRIX_MASTER_SHEET');
   if (cached) return JSON.parse(cached);
@@ -629,9 +645,9 @@ function ensureMasterLogHeader_(sheet) {
   return headers.length;
 }
 
-function writeCalculatedColumns_(sheet, rowIndex, calc) {
+function calculatedColumnsRow_(calc) {
   // R:AM = 22 calculated fields. AN remains Account Manager.
-  sheet.getRange(rowIndex, 18, 1, 22).setValues([[
+  return [
     calc.uploadWeek,
     calc.coverage,
     calc.duration,
@@ -654,26 +670,34 @@ function writeCalculatedColumns_(sheet, rowIndex, calc) {
     calc.incrementalOrders,
     calc.estimatedPromoCost,
     calc.estimatedBudgetSpend
-  ]]);
+  ];
+}
+
+function writeCalculatedColumns_(sheet, rowIndex, calc) {
+  sheet.getRange(rowIndex, 18, 1, 22).setValues([calculatedColumnsRow_(calc)]);
 
   // AO = Top 3 test share of GMV for WAW/KRA/WRO/POZ.
   sheet.getRange(rowIndex, 41).setValue(calc.top3Multiplier);
 
+  formatCalculatedColumns_(sheet, rowIndex, 1);
+}
+
+function formatCalculatedColumns_(sheet, startRow, numRows) {
   // Percentage formatting. Values are stored as decimal fractions.
-  sheet.getRange(rowIndex, 14, 1, 2).setNumberFormat('0%');       // N:O
-  sheet.getRange(rowIndex, 17).setNumberFormat('0%');             // Q
-  sheet.getRange(rowIndex, 19).setNumberFormat('0.0%');           // S
-  sheet.getRange(rowIndex, 22).setNumberFormat('0%');             // V
-  sheet.getRange(rowIndex, 27, 1, 2).setNumberFormat('0.0%');     // AA:AB
-  sheet.getRange(rowIndex, 31).setNumberFormat('0.0%');           // AE
-  sheet.getRange(rowIndex, 41).setNumberFormat('0.0%');           // AO
+  sheet.getRange(startRow, 14, numRows, 2).setNumberFormat('0%');       // N:O
+  sheet.getRange(startRow, 17, numRows, 1).setNumberFormat('0%');       // Q
+  sheet.getRange(startRow, 19, numRows, 1).setNumberFormat('0.0%');     // S
+  sheet.getRange(startRow, 22, numRows, 1).setNumberFormat('0%');       // V
+  sheet.getRange(startRow, 27, numRows, 2).setNumberFormat('0.0%');     // AA:AB
+  sheet.getRange(startRow, 31, numRows, 1).setNumberFormat('0.0%');     // AE
+  sheet.getRange(startRow, 41, numRows, 1).setNumberFormat('0.0%');     // AO
 
   // Currency formatting.
-  sheet.getRange(rowIndex, 29, 1, 2).setNumberFormat('€#,##0.00'); // AC:AD
-  sheet.getRange(rowIndex, 32, 1, 2).setNumberFormat('€#,##0.00'); // AF:AG
-  sheet.getRange(rowIndex, 34).setNumberFormat('€#,##0.00');      // AH
-  sheet.getRange(rowIndex, 36).setNumberFormat('€#,##0.00');      // AJ
-  sheet.getRange(rowIndex, 38, 1, 2).setNumberFormat('€#,##0.00'); // AL:AM
+  sheet.getRange(startRow, 29, numRows, 2).setNumberFormat('€#,##0.00'); // AC:AD
+  sheet.getRange(startRow, 32, numRows, 2).setNumberFormat('€#,##0.00'); // AF:AG
+  sheet.getRange(startRow, 34, numRows, 1).setNumberFormat('€#,##0.00'); // AH
+  sheet.getRange(startRow, 36, numRows, 1).setNumberFormat('€#,##0.00'); // AJ
+  sheet.getRange(startRow, 38, numRows, 2).setNumberFormat('€#,##0.00'); // AL:AM
 }
 
 function submitPromotionToMasterLog(promoData) {
@@ -832,28 +856,43 @@ function masterRowToPromoData_(row) {
 
 /**
  * Opcjonalnie: przelicza wszystkie istniejące wiersze Master_Log.
+ * Liczy wszystko w pamięci i zapisuje jednym setValues (zapis wiersz po wierszu
+ * przekraczał limit czasu Apps Script). Wiersze bez partnera zostają bez zmian.
  */
 function recalculateAllMasterLog() {
+  var started = Date.now();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Master_Log');
   if (!sheet || sheet.getLastRow() < 2) return { status: 'SUCCESS', rows: 0 };
 
   ensureMasterLogHeader_(sheet);
   ensureMbsColumn_(sheet);
-  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, MBS_COLUMN).getValues();
+  var totalRows = sheet.getLastRow() - 1;
+  var data = sheet.getRange(2, 1, totalRows, MBS_COLUMN).getValues();
+
+  var calculated = [];
+  var top3 = [];
   var count = 0;
 
   data.forEach(function(row, idx) {
-    if (!row[4]) return; // Pomijaj puste wiersze (bez partnera)
-
-    var promoData = masterRowToPromoData_(row);
-
-    var calc = calculateMasterLog_(promoData);
-    writeCalculatedColumns_(sheet, idx + 2, calc);
+    if (!row[4]) {
+      // R:AM (indeksy 17-38) i AO (40) bez zmian.
+      calculated.push(row.slice(17, 39));
+      top3.push([row[40]]);
+      return;
+    }
+    var calc = calculateMasterLog_(masterRowToPromoData_(row));
+    calculated.push(calculatedColumnsRow_(calc));
+    top3.push([calc.top3Multiplier]);
     count++;
+    if (count % 500 === 0) Logger.log('Przeliczono ' + count + ' wierszy...');
   });
 
-  Logger.log('Przeliczono wierszy: ' + count);
+  sheet.getRange(2, 18, totalRows, 22).setValues(calculated);
+  sheet.getRange(2, 41, totalRows, 1).setValues(top3);
+  formatCalculatedColumns_(sheet, 2, totalRows);
+
+  Logger.log('Przeliczono wierszy: ' + count + ' z ' + totalRows + ' w ' + Math.round((Date.now() - started) / 1000) + ' s');
   return { status: 'SUCCESS', rows: count };
 }
 
