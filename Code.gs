@@ -586,10 +586,14 @@ function submitPromotionToMasterLog(promoData) {
   var createdAt = Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd HH:mm");
   var nextRow = sheet.getLastRow() + 1;
 
+  // A promo an AM sets up themselves (not via PromoBot) is logged only for stats,
+  // so it skips the approval queue and is accepted immediately.
+  var isSelfSetupAM = String(promoData.activationMethod || '').trim().toLowerCase() === 'am';
+
   var baseValues = new Array(43).fill('');
   baseValues[0] = id;
   baseValues[1] = createdAt;
-  baseValues[2] = 'PENDING_APPROVAL';
+  baseValues[2] = isSelfSetupAM ? 'APPROVED' : 'PENDING_APPROVAL';
   baseValues[3] = promoData.budgetSource;
   baseValues[4] = promoData.partnerName;
   baseValues[5] = promoData.storeAddressId || 'ALL';

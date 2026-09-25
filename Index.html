@@ -1773,6 +1773,20 @@ function handlePromoPurposeChange() {
       } else {
         select.querySelector('option[value="Promobot"]').disabled = false;
       }
+      updateStartDateConstraint();
+    }
+
+    // AM self-setup promos are only for internal stats, not run by PromoBot,
+    // so the Monday-only start date rule (needed for the bot's weekly upload) doesn't apply.
+    function updateStartDateConstraint() {
+      const select = document.getElementById('activationMethod');
+      const startInput = document.getElementById('startDate');
+      if (!select || !startInput) return;
+      if (select.value === 'AM') {
+        startInput.removeAttribute('min');
+      } else {
+        startInput.min = getCurrentWeekMondayDate();
+      }
     }
 
     function handleEditActivationMethodChange() {
@@ -1786,6 +1800,18 @@ function handlePromoPurposeChange() {
         select.querySelector('option[value="Promobot"]').disabled = true;
       } else {
         select.querySelector('option[value="Promobot"]').disabled = false;
+      }
+      updateEditStartDateConstraint();
+    }
+
+    function updateEditStartDateConstraint() {
+      const select = document.getElementById('editActivationMethod');
+      const startInput = document.getElementById('editStartDate');
+      if (!select || !startInput) return;
+      if (select.value === 'AM') {
+        startInput.removeAttribute('min');
+      } else {
+        startInput.min = getCurrentWeekMondayDate();
       }
     }
 
@@ -2746,6 +2772,10 @@ function handlePromoPurposeChange() {
           document.getElementById('cofunding').value
       };
 
+      // Promos an AM sets up themselves (not via PromoBot) are only tracked for stats,
+      // so they're free to pick any start date and skip the bot's Monday-only rule.
+      const isSelfSetupAM = basePromoData.activationMethod === 'AM';
+
       const promotionsToSubmit = [];
 
       if (isMultiple) {
@@ -2772,7 +2802,7 @@ function handlePromoPurposeChange() {
             new Date(campaignEnd + 'T00:00:00');
 
           const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-          if (start < minMonday) {
+          if (!isSelfSetupAM && start < minMonday) {
             alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
             return;
           }
@@ -2832,9 +2862,10 @@ function handlePromoPurposeChange() {
         const end =
           new Date(endDate + 'T00:00:00');
 
-        // Blokada daty wcześniejszej niż bieżący poniedziałek
+        // Blokada daty wcześniejszej niż bieżący poniedziałek (nie dotyczy promocji ustawianych
+        // samodzielnie przez AM, poza PromoBotem — one służą tylko do statystyk).
         const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-        if (start < minMonday) {
+        if (!isSelfSetupAM && start < minMonday) {
           alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
           return;
         }
@@ -2896,14 +2927,22 @@ function handlePromoPurposeChange() {
             return result && result.id ? result.id : '';
           }).filter(Boolean);
 
-          alert(
-            count === 1
-              ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
-              : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
-          );
+          if (isSelfSetupAM) {
+            alert(
+              count === 1
+                ? 'Promocja zgłoszona i automatycznie zaakceptowana! ID: ' + ids[0] + '.'
+                : count + ' promocje zgłoszone i automatycznie zaakceptowane!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+            );
+          } else {
+            alert(
+              count === 1
+                ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
+                : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+            );
+          }
 
           resetForm();
-          switchTab('tab2');
+          switchTab(isSelfSetupAM ? 'tab3' : 'tab2');
           return;
         }
 
