@@ -2929,24 +2929,6 @@ function getBTUTracker() {
 
   var summary = makeBTUSummary_(rows);
 
-  // Target vs Reality must compare against the whole of Poland's GMV, not
-  // just the partners someone happened to add to the BTU tracker (that
-  // subset is small and non-representative per tier). Pull the real
-  // "% GMV in promo" per investment tier live from BigQuery instead.
-  try {
-    var nationalActuals = getNationalPromoIntensityByTier_();
-    summary.tierTargets = Object.keys(BTU_PROMO_TARGETS).map(function(tierName) {
-      return {
-        tier: tierName,
-        actual: nationalActuals[tierName] || 0,
-        target: BTU_PROMO_TARGETS[tierName]
-      };
-    });
-  } catch (e) {
-    Logger.log('getNationalPromoIntensityByTier_ failed: ' + e.message);
-    summary.tierTargets = [];
-  }
-
   Logger.log(
     'BTU DEBUG 8a - summary total: ' +
     summary.total
@@ -2985,17 +2967,14 @@ function getBTUTracker() {
 }
 
 // City -> investment tier, per Miłosz Marciniak (city benchmarks tab).
-// Min has no explicit city list ("BZG, SZY + Tier 4") - it's every city
-// not covered by Ultra/Max/Med, so every zloty of national GMV lands in
-// exactly one tier. Used by getNationalPromoIntensityByTier_() to classify
-// BigQuery rows, not by the BTU tracker.
-var BTU_TIER_CITY_CASE_SQL =
-  "CASE" +
-  " WHEN city_code = 'WAW' THEN 'Ultra'" +
-  " WHEN city_code IN ('KRA','WRO','POZ') THEN 'Max'" +
-  " WHEN city_code IN ('GDN','LOD','KTW','QLU','SZZ','QYY','RZE') THEN 'Med'" +
-  " ELSE 'Min'" +
-  " END";
+// Cities not yet tracked in BTU (QLU, SZZ, QYY, RZE, SZY) are omitted on
+// purpose; add them here once they have rows in the BTU tracker.
+var BTU_TIER_CITIES = {
+  Ultra: ['WAW'],
+  Max: ['KRA', 'WRO', 'POZ'],
+  Med: ['GDN', 'LOD', 'KTW'],
+  Min: ['BZG', 'KLC']
+};
 
 // Weekly "% GMV in promo" targets by investment tier, from the national
 // promo target sheet. No live source for this yet - update by hand when
@@ -3080,6 +3059,32 @@ function makeBTUSummary_(rows) {
   var prime10 = rows.filter(function(r){ return String(r.prime10).toLowerCase() === 'yes'; });
   var prime5 = rows.filter(function(r){ return String(r.prime5).toLowerCase() === 'yes'; });
 
+  // GMV-weighted "% GMV in promo" per investment tier, vs BTU_PROMO_TARGETS.
+  // Coverage among BTU-tracked partners only, not all of Poland's GMV.
+  var promoWeightAll = rows.reduce(function(sum, r) {
+    var isOnPromo = String(r.onPromo || '').trim().toLowerCase() === 'yes';
+    return sum + (isOnPromo ? (Number(r.gmvWeight) || 0) : 0);
+  }, 0);
+
+  var tierTargets = [{
+    tier: 'PL',
+    actual: totalWeight ? promoWeightAll / totalWeight : 0,
+    target: BTU_PROMO_TARGETS.PL
+  }];
+
+  Object.keys(BTU_TIER_CITIES).forEach(function(tierName) {
+    var tw = 0, pw = 0;
+    BTU_TIER_CITIES[tierName].forEach(function(cityName) {
+      var c = cities[cityName];
+      if (c) { tw += c.totalWeight; pw += c.promoWeight; }
+    });
+    tierTargets.push({
+      tier: tierName,
+      actual: tw ? pw / tw : 0,
+      target: BTU_PROMO_TARGETS[tierName]
+    });
+  });
+
   return {
     total: total,
     totalWeight: totalWeight,
@@ -3088,81 +3093,9 @@ function makeBTUSummary_(rows) {
     prime10: prime10.length,
     prime5: prime5.length,
     promoRate: total ? onPromo.length / total : 0,
-    cities: list
+    cities: list,
+    tierTargets: tierTargets
   };
-}
-
-/**
- * Real "% GMV in promo" per investment tier, across ALL of Poland's GMV -
- * not just BTU-tracked partners. Ground truth from BigQuery (same table
- * Data_Pull.gs's Partners refresh uses), classified by city_code into
- * Ultra/Max/Med/Min via BTU_TIER_CITY_CASE_SQL. Covers the last fully
- * completed week (Mon-Sun) so the week's data isn't partial.
- *
- * Cached for 6h since this doesn't change intra-day and is the same for
- * every viewer regardless of what's in the BTU tracker.
- */
-function getNationalPromoIntensityByTier_() {
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get('PROMO_LOG_NATIONAL_PROMO_INTENSITY');
-  if (cached) return JSON.parse(cached);
-
-  var projectId = 'dhub-glovo';
-  var query = `
-    WITH daily AS (
-      SELECT
-        city_code,
-        p_creation_date,
-        store_address_id,
-        SUM(DH_GMV) AS gmv,
-        MAX(CASE WHEN COALESCE(promo_orders,0) > 0
-                   OR COALESCE(total_promotool_discounts,0) > 0
-                 THEN 1 ELSE 0 END) AS is_promo_day
-      FROM \`fulfillment-dwh-production.curated_data_shared_glovo.promos_okr__promos_okr_tracker_v2\`
-      WHERE country_code = 'PL'
-        AND segmentation <> 'Q-Commerce'
-        AND p_creation_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(MONDAY)), INTERVAL 7 DAY)
-        AND p_creation_date < DATE_TRUNC(CURRENT_DATE(), WEEK(MONDAY))
-      GROUP BY city_code, p_creation_date, store_address_id
-    )
-    SELECT
-      ${BTU_TIER_CITY_CASE_SQL} AS tier,
-      SUM(gmv) AS total_gmv,
-      SUM(IF(is_promo_day = 1, gmv, 0)) AS promo_gmv
-    FROM daily
-    GROUP BY tier
-  `;
-
-  var request = BigQuery.newQueryRequest();
-  request.query = query;
-  request.useLegacySql = false;
-
-  var queryResults = BigQuery.Jobs.query(request, projectId);
-  var rows = queryResults.rows || [];
-
-  var byTier = {};
-  var totalGmvAll = 0;
-  var promoGmvAll = 0;
-
-  rows.forEach(function(r) {
-    var tier = r.f[0].v;
-    var tGmv = Number(r.f[1].v) || 0;
-    var pGmv = Number(r.f[2].v) || 0;
-    byTier[tier] = tGmv ? pGmv / tGmv : 0;
-    totalGmvAll += tGmv;
-    promoGmvAll += pGmv;
-  });
-
-  var result = {
-    PL: totalGmvAll ? promoGmvAll / totalGmvAll : 0,
-    Ultra: byTier.Ultra || 0,
-    Max: byTier.Max || 0,
-    Med: byTier.Med || 0,
-    Min: byTier.Min || 0
-  };
-
-  cache.put('PROMO_LOG_NATIONAL_PROMO_INTENSITY', JSON.stringify(result), 21600);
-  return result;
 }
 
 function saveBTUTrackerRow(rowData) {
