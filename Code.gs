@@ -3027,6 +3027,8 @@ function makeBTUSummary_(rows) {
     };
   });
 
+  list = list.filter(function(c) { return c.city.toLowerCase() !== 'other'; });
+
   list.sort(function(a,b) { return b.totalWeight - a.totalWeight || a.city.localeCompare(b.city); });
 
   var total = rows.length;
@@ -3122,6 +3124,55 @@ function addBTUPartner(rowData) {
 
   sheet.appendRow(row);
   return { status: 'SUCCESS', rowIndex: sheet.getLastRow() };
+}
+
+/**
+ * One-time backfill: fills blank GMV Weight (BTU!D) for BTU rows whose
+ * Store ID (BTU!C) matches a "sid" in the "gmv data" sheet (C = sid,
+ * F = store_share_of_city_gmv). Run manually from the Apps Script editor
+ * after adding new partners/cities to BTU. Rows that already have a GMV
+ * Weight are left untouched.
+ */
+function backfillBTUGmvWeightsFromGmvData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var btuSheet = ss.getSheetByName('BTU');
+  var gmvSheet = ss.getSheetByName('gmv data');
+  if (!btuSheet || !gmvSheet) {
+    Logger.log('backfillBTUGmvWeightsFromGmvData: BTU or "gmv data" sheet not found.');
+    return { status: 'ERROR', reason: 'BTU or "gmv data" sheet not found.' };
+  }
+
+  var gmvLastRow = gmvSheet.getLastRow();
+  if (gmvLastRow < 2) return { status: 'SKIPPED', reason: '"gmv data" is empty.' };
+
+  var gmvRows = gmvSheet.getRange(2, 1, gmvLastRow - 1, 6).getValues(); // A:F
+  var shareBySid = {};
+  gmvRows.forEach(function(row) {
+    var sid = String(row[2] || '').trim();  // C = sid
+    var share = toNumber_(row[5]);          // F = store_share_of_city_gmv
+    if (sid && share !== null) shareBySid[sid] = share;
+  });
+
+  var btuLastRow = btuSheet.getLastRow();
+  if (btuLastRow < 2) return { status: 'SKIPPED', reason: 'BTU is empty.' };
+
+  var btuRows = btuSheet.getRange(2, 1, btuLastRow - 1, 4).getValues(); // A:D
+  var updates = 0;
+
+  btuRows.forEach(function(row, idx) {
+    var gmvWeight = row[3];
+    if (gmvWeight !== '' && gmvWeight !== null) return; // already has a value, leave it
+
+    var storeId = String(row[2] || '').trim(); // C = Store ID
+    var share = shareBySid[storeId];
+    if (share === undefined) return; // no match in "gmv data"
+
+    btuSheet.getRange(idx + 2, 4).setValue(share);
+    updates++;
+  });
+
+  Logger.log('backfillBTUGmvWeightsFromGmvData: updated ' + updates + ' row(s).');
+  return { status: 'SUCCESS', updated: updates };
 }
 
 function upsertBTUPartnerFromPromo_(promoData, promoId, masterRowIndex) {
