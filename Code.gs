@@ -2658,6 +2658,47 @@ function getBTUAmTeamMap_() {
   return map;
 }
 
+/**
+ * Reads the "gmv data" sheet (order_city_code, partner, sid, store_gmv,
+ * total_city_gmv, store_share_of_city_gmv, rank_in_city) and returns a map
+ * of Store ID (sid) -> store_share_of_city_gmv.
+ *
+ * This is the live source for BTU's "GMV Weight". AMs never enter it by
+ * hand; it's looked up automatically by Store ID whenever the BTU tracker
+ * loads, so a partner in a new city shows up correctly as soon as its
+ * store id has a row here (see getBTUTracker()).
+ */
+function getGmvWeightMap_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('gmv data');
+  var map = {};
+  if (!sheet || sheet.getLastRow() < 2) return map;
+
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+    return String(h == null ? '' : h).trim().toLowerCase();
+  });
+
+  var sidCol = headers.indexOf('sid');
+  var shareCol = headers.findIndex(function(h) { return h.indexOf('store_share') !== -1; });
+
+  if (sidCol === -1 || shareCol === -1) {
+    Logger.log('getGmvWeightMap_: "sid" or "store_share_*" column not found in "gmv data" headers: ' + headers.join(', '));
+    return map;
+  }
+
+  var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
+  values.forEach(function(row) {
+    var sid = String(row[sidCol] || '').trim();
+    var share = toNumber_(row[shareCol]);
+    if (sid && share !== null) {
+      map[sid] = share;
+    }
+  });
+
+  return map;
+}
+
 function getBTUTracker() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('BTU');
@@ -2729,6 +2770,13 @@ function getBTUTracker() {
   Logger.log(
     'BTU DEBUG 4 - amTeamMap keys: ' +
     Object.keys(amTeamMap).length
+  );
+
+  var gmvWeightMap = getGmvWeightMap_();
+
+  Logger.log(
+    'BTU DEBUG 4b - gmvWeightMap keys: ' +
+    Object.keys(gmvWeightMap).length
   );
 
   // ---------------------------------------------------------
@@ -2840,12 +2888,22 @@ function getBTUTracker() {
       ? promos[promos.length - 1].id
       : String(r[10] || '');
 
+    var storeId = String(r[2] || '').trim();
+
+    // GMV Weight is never entered by hand. It's looked up live from the
+    // "gmv data" sheet by Store ID (sid); the value stored in BTU!D is
+    // only a fallback for rows whose store id isn't in "gmv data" yet.
+    var liveGmvWeight = gmvWeightMap[storeId];
+    var gmvWeight = liveGmvWeight !== undefined
+      ? liveGmvWeight
+      : (r[3] === '' ? '' : toNumber_(r[3]));
+
     return {
       rowIndex: idx + 2,
       city: String(r[0] || ''),
       storeName: name,
-      storeId: String(r[2] || ''),
-      gmvWeight: r[3] === '' ? '' : toNumber_(r[3]),
+      storeId: storeId,
+      gmvWeight: gmvWeight,
       accountManager: accountManager,
       team: team,
       manager: manager,
