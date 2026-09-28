@@ -690,10 +690,14 @@ function submitPromotionToMasterLog(promoData) {
 
   var partnerMaster = findPartnerMaster_(promoData.partnerName, getPartnersMasterData_());
 
+  // Promocja ustawiana samodzielnie przez AM (nie przez Promobota) służy tylko do
+  // statystyk, więc pomija kolejkę approvali i od razu jest zaakceptowana.
+  var isSelfSetupAM = String(promoData.activationMethod || '').trim().toLowerCase() === 'am';
+
   var baseValues = new Array(43).fill('');
   baseValues[0] = id;
   baseValues[1] = createdAt;
-  baseValues[2] = 'PENDING_APPROVAL';
+  baseValues[2] = isSelfSetupAM ? 'APPROVED' : 'PENDING_APPROVAL';
   baseValues[3] = promoData.budgetSource;
   baseValues[4] = promoData.partnerName;
   baseValues[5] = promoData.storeAddressId || 'ALL';
@@ -834,26 +838,67 @@ function masterRowToPromoData_(row) {
  * Opcjonalnie: przelicza wszystkie istniejące wiersze Master_Log.
  */
 function recalculateAllMasterLog() {
+  var started = Date.now();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Master_Log');
   if (!sheet || sheet.getLastRow() < 2) return { status: 'SUCCESS', rows: 0 };
 
   ensureMasterLogHeader_(sheet);
   ensureMbsColumn_(sheet);
-  var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, MBS_COLUMN).getValues();
+  var totalRows = sheet.getLastRow() - 1;
+  var data = sheet.getRange(2, 1, totalRows, MBS_COLUMN).getValues();
+
+  // Partners i Matrix wczytujemy raz, a nie dla każdego wiersza.
+  var partners = getPartnersMasterData_();
+  var matrix = getMatrixMasterData_();
+  getPartnersMasterData_ = function() { return partners; };
+  getMatrixMasterData_ = function() { return matrix; };
+
+  var calculated = [];
+  var top3 = [];
   var count = 0;
 
-  data.forEach(function(row, idx) {
-    if (!row[4]) return; // Pomijaj puste wiersze (bez partnera)
-
-    var promoData = masterRowToPromoData_(row);
-
-    var calc = calculateMasterLog_(promoData);
-    writeCalculatedColumns_(sheet, idx + 2, calc);
+  data.forEach(function(row) {
+    if (!row[4]) {
+      // Wiersz bez partnera: R:AM i AO bez zmian.
+      calculated.push(row.slice(17, 39));
+      top3.push([row[40]]);
+      return;
+    }
+    var calc = calculateMasterLog_(masterRowToPromoData_(row));
+    calculated.push([
+      calc.uploadWeek, calc.coverage, calc.duration, calc.segmentation, calc.maxDiscount,
+      calc.matrixKey, calc.gmvUpliftMultiplier, calc.ordersUpliftMultiplier,
+      calc.promoProductsUpliftMultiplier, calc.promoOrdersPct, calc.costIntensity,
+      calc.baselineGmv, calc.baselineOrders, calc.primeShare, calc.forecastedGmv,
+      calc.forecastedOrders, calc.upliftGmv, calc.upliftOrders, calc.incrementalGmv,
+      calc.incrementalOrders, calc.estimatedPromoCost, calc.estimatedBudgetSpend
+    ]);
+    top3.push([calc.top3Multiplier]);
     count++;
+    if (count % 500 === 0) Logger.log('Przeliczono ' + count + ' wierszy...');
   });
 
-  Logger.log('Przeliczono wierszy: ' + count);
+  // Jeden zapis zamiast zapisu wiersz po wierszu.
+  sheet.getRange(2, 18, totalRows, 22).setValues(calculated);
+  sheet.getRange(2, 41, totalRows, 1).setValues(top3);
+
+  // Formatowanie kolumn raz dla całego zakresu.
+  sheet.getRange(2, 14, totalRows, 2).setNumberFormat('0%');        // N:O
+  sheet.getRange(2, 17, totalRows, 1).setNumberFormat('0%');        // Q
+  sheet.getRange(2, 19, totalRows, 1).setNumberFormat('0.0%');      // S
+  sheet.getRange(2, 22, totalRows, 1).setNumberFormat('0%');        // V
+  sheet.getRange(2, 27, totalRows, 2).setNumberFormat('0.0%');      // AA:AB
+  sheet.getRange(2, 31, totalRows, 1).setNumberFormat('0.0%');      // AE
+  sheet.getRange(2, 41, totalRows, 1).setNumberFormat('0.0%');      // AO
+  sheet.getRange(2, 29, totalRows, 2).setNumberFormat('€#,##0.00'); // AC:AD
+  sheet.getRange(2, 32, totalRows, 2).setNumberFormat('€#,##0.00'); // AF:AG
+  sheet.getRange(2, 34, totalRows, 1).setNumberFormat('€#,##0.00'); // AH
+  sheet.getRange(2, 36, totalRows, 1).setNumberFormat('€#,##0.00'); // AJ
+  sheet.getRange(2, 38, totalRows, 2).setNumberFormat('€#,##0.00'); // AL:AM
+
+  Logger.log('Przeliczono wierszy: ' + count + ' z ' + totalRows + ' w ' +
+    Math.round((Date.now() - started) / 1000) + ' s');
   return { status: 'SUCCESS', rows: count };
 }
 
@@ -1765,7 +1810,7 @@ var ALLOWED_AM_EMAILS = [
   'hanna.dlutek@glovoapp.com', 'maja.plaskocinska@glovoapp.com', 'brian.mbewe@glovoapp.com',
   'bartosz.bil@glovoapp.com', 'katarzyna.kanigowska@glovoapp.com', 'paulina.jaruminowska@glovoapp.com',
   'daria.jerzewska@glovoapp.com', 'antonina.nowak@glovoapp.com', 'stanislaw.wozniak@glovoapp.com',
-  'karolina.stanecka@glovoapp.com'
+  'karolina.stanecka@glovoapp.com','krzysztof.kirejczyk@glovoapp.com','kamila.zygadlo@glovoapp.com','olivia.gawrych@glovoapp.com','marianna.kalebka@glovoapp.com'
 ];
 /**
  * ============================================================
@@ -2658,47 +2703,6 @@ function getBTUAmTeamMap_() {
   return map;
 }
 
-/**
- * Reads the "gmv data" sheet (order_city_code, partner, sid, store_gmv,
- * total_city_gmv, store_share_of_city_gmv, rank_in_city) and returns a map
- * of Store ID (sid) -> store_share_of_city_gmv.
- *
- * This is the live source for BTU's "GMV Weight". AMs never enter it by
- * hand; it's looked up automatically by Store ID whenever the BTU tracker
- * loads, so a partner in a new city shows up correctly as soon as its
- * store id has a row here (see getBTUTracker()).
- */
-function getGmvWeightMap_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('gmv data');
-  var map = {};
-  if (!sheet || sheet.getLastRow() < 2) return map;
-
-  var lastCol = sheet.getLastColumn();
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-    return String(h == null ? '' : h).trim().toLowerCase();
-  });
-
-  var sidCol = headers.indexOf('sid');
-  var shareCol = headers.findIndex(function(h) { return h.indexOf('store_share') !== -1; });
-
-  if (sidCol === -1 || shareCol === -1) {
-    Logger.log('getGmvWeightMap_: "sid" or "store_share_*" column not found in "gmv data" headers: ' + headers.join(', '));
-    return map;
-  }
-
-  var values = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
-  values.forEach(function(row) {
-    var sid = String(row[sidCol] || '').trim();
-    var share = toNumber_(row[shareCol]);
-    if (sid && share !== null) {
-      map[sid] = share;
-    }
-  });
-
-  return map;
-}
-
 function getBTUTracker() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('BTU');
@@ -2770,13 +2774,6 @@ function getBTUTracker() {
   Logger.log(
     'BTU DEBUG 4 - amTeamMap keys: ' +
     Object.keys(amTeamMap).length
-  );
-
-  var gmvWeightMap = getGmvWeightMap_();
-
-  Logger.log(
-    'BTU DEBUG 4b - gmvWeightMap keys: ' +
-    Object.keys(gmvWeightMap).length
   );
 
   // ---------------------------------------------------------
@@ -2888,22 +2885,12 @@ function getBTUTracker() {
       ? promos[promos.length - 1].id
       : String(r[10] || '');
 
-    var storeId = String(r[2] || '').trim();
-
-    // GMV Weight is never entered by hand. It's looked up live from the
-    // "gmv data" sheet by Store ID (sid); the value stored in BTU!D is
-    // only a fallback for rows whose store id isn't in "gmv data" yet.
-    var liveGmvWeight = gmvWeightMap[storeId];
-    var gmvWeight = liveGmvWeight !== undefined
-      ? liveGmvWeight
-      : (r[3] === '' ? '' : toNumber_(r[3]));
-
     return {
       rowIndex: idx + 2,
       city: String(r[0] || ''),
       storeName: name,
-      storeId: storeId,
-      gmvWeight: gmvWeight,
+      storeId: String(r[2] || ''),
+      gmvWeight: r[3] === '' ? '' : toNumber_(r[3]),
       accountManager: accountManager,
       team: team,
       manager: manager,
