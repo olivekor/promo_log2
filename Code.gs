@@ -2966,6 +2966,27 @@ function getBTUTracker() {
   return result;
 }
 
+// City -> investment tier, per Miłosz Marciniak (city benchmarks tab).
+// Cities not yet tracked in BTU (QLU, SZZ, QYY, RZE, SZY) are omitted on
+// purpose; add them here once they have rows in the BTU tracker.
+var BTU_TIER_CITIES = {
+  Ultra: ['WAW'],
+  Max: ['KRA', 'WRO', 'POZ'],
+  Med: ['GDN', 'LOD', 'KTW'],
+  Min: ['BZG', 'KLC']
+};
+
+// Weekly "% GMV in promo" targets by investment tier, from the national
+// promo target sheet. No live source for this yet - update by hand when
+// the target changes.
+var BTU_PROMO_TARGETS = {
+  PL: 0.48,
+  Ultra: 0.50,
+  Max: 0.48,
+  Med: 0.42,
+  Min: 0.45
+};
+
 function makeBTUSummary_(rows) {
   // Legacy BTU summary is GMV-weight based. BTU!D already contains the
   // store/city GMV weight imported from the legacy gmv data, so we do not
@@ -3038,6 +3059,32 @@ function makeBTUSummary_(rows) {
   var prime10 = rows.filter(function(r){ return String(r.prime10).toLowerCase() === 'yes'; });
   var prime5 = rows.filter(function(r){ return String(r.prime5).toLowerCase() === 'yes'; });
 
+  // GMV-weighted "% GMV in promo" per investment tier, vs BTU_PROMO_TARGETS.
+  // Coverage among BTU-tracked partners only, not all of Poland's GMV.
+  var promoWeightAll = rows.reduce(function(sum, r) {
+    var isOnPromo = String(r.onPromo || '').trim().toLowerCase() === 'yes';
+    return sum + (isOnPromo ? (Number(r.gmvWeight) || 0) : 0);
+  }, 0);
+
+  var tierTargets = [{
+    tier: 'PL',
+    actual: totalWeight ? promoWeightAll / totalWeight : 0,
+    target: BTU_PROMO_TARGETS.PL
+  }];
+
+  Object.keys(BTU_TIER_CITIES).forEach(function(tierName) {
+    var tw = 0, pw = 0;
+    BTU_TIER_CITIES[tierName].forEach(function(cityName) {
+      var c = cities[cityName];
+      if (c) { tw += c.totalWeight; pw += c.promoWeight; }
+    });
+    tierTargets.push({
+      tier: tierName,
+      actual: tw ? pw / tw : 0,
+      target: BTU_PROMO_TARGETS[tierName]
+    });
+  });
+
   return {
     total: total,
     totalWeight: totalWeight,
@@ -3046,7 +3093,8 @@ function makeBTUSummary_(rows) {
     prime10: prime10.length,
     prime5: prime5.length,
     promoRate: total ? onPromo.length / total : 0,
-    cities: list
+    cities: list,
+    tierTargets: tierTargets
   };
 }
 
