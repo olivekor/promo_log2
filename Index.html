@@ -1263,25 +1263,6 @@
           <tbody id="btuSummaryTable"></tbody>
         </table>
       </div>
-
-      <div class="p-5 border-t border-purple-100">
-        <h4 class="font-extrabold text-gray-900 text-xs uppercase tracking-wider">Target vs Reality</h4>
-        <p class="text-[10px] text-gray-500 mt-1">% GMV in Promo vs weekly national target, by investment tier (BTU-tracked partners only)</p>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-xs">
-          <thead class="bg-gray-50 text-gray-500 uppercase">
-            <tr>
-              <th class="px-3 py-3 text-left">Tier</th>
-              <th class="px-3 py-3 text-right">Target</th>
-              <th class="px-3 py-3 text-right">Actual</th>
-              <th class="px-3 py-3 text-right">Gap</th>
-            </tr>
-          </thead>
-          <tbody id="btuTierTargetTable"></tbody>
-        </table>
-      </div>
-
       <div class="p-4 border-t border-gray-100 bg-gray-50">
 
   <div class="flex gap-2 items-start">
@@ -2291,21 +2272,6 @@ function updateEditStartDateConstraint() {
             '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.prime5Rate) + '</td>' +
-            '</tr>';
-        }).join('');
-      }
-
-      const tierTable = document.getElementById('btuTierTargetTable');
-      if (tierTable) {
-        tierTable.innerHTML = (s.tierTargets || []).map(function(t) {
-          const gap = (t.actual || 0) - (t.target || 0);
-          const gapClass = gap >= 0 ? 'text-emerald-600' : 'text-red-500';
-          const gapText = (gap >= 0 ? '+' : '') + (gap * 100).toFixed(1) + 'pp';
-          return '<tr class="border-t border-gray-100">' +
-            '<td class="px-3 py-2 font-bold">' + escapeHtml(t.tier) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(t.target) + '</td>' +
-            '<td class="px-3 py-2 text-right font-bold">' + pct1(t.actual) + '</td>' +
-            '<td class="px-3 py-2 text-right font-bold ' + gapClass + '">' + gapText + '</td>' +
             '</tr>';
         }).join('');
       }
