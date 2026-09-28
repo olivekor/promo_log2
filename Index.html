@@ -1913,34 +1913,60 @@ function handlePromoPurposeChange() {
       renderAllCampaignProductPickers();
     }
 
-    function handleActivationMethodChange() {
-      const type = document.getElementById('promoType').value;
-      const strategy = document.getElementById('promoStrategy').value;
-      const select = document.getElementById('activationMethod');
-      if (!select) return;
-      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
-      if (blocked) {
-        select.value = 'AM';
-        select.querySelector('option[value="Promobot"]').disabled = true;
-      } else {
-        select.querySelector('option[value="Promobot"]').disabled = false;
-      }
-    }
+function handleActivationMethodChange() {
+  const type = document.getElementById('promoType').value;
+  const strategy = document.getElementById('promoStrategy').value;
+  const select = document.getElementById('activationMethod');
+  if (!select) return;
+  const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+  if (blocked) {
+    select.value = 'AM';
+    select.querySelector('option[value="Promobot"]').disabled = true;
+  } else {
+    select.querySelector('option[value="Promobot"]').disabled = false;
+  }
+  updateStartDateConstraint();
+}
 
-    function handleEditActivationMethodChange() {
-      const type = document.getElementById('editPromoType').value;
-      const strategy = document.getElementById('editPromoStrategy').value;
-      const select = document.getElementById('editActivationMethod');
-      if (!select) return;
-      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
-      if (blocked) {
-        select.value = 'AM';
-        select.querySelector('option[value="Promobot"]').disabled = true;
-      } else {
-        select.querySelector('option[value="Promobot"]').disabled = false;
-      }
-    }
+// Promocje self-setup AM służą tylko do statystyk, nie są obsługiwane przez
+// Promobota, więc zasada "tylko poniedziałek" (potrzebna do cotygodniowego
+// uploadu bota) ich nie dotyczy.
+function updateStartDateConstraint() {
+  const select = document.getElementById('activationMethod');
+  const startInput = document.getElementById('startDate');
+  if (!select || !startInput) return;
+  if (select.value === 'AM') {
+    startInput.removeAttribute('min');
+  } else {
+    startInput.min = getCurrentWeekMondayDate();
+  }
+}
 
+function handleEditActivationMethodChange() {
+  const type = document.getElementById('editPromoType').value;
+  const strategy = document.getElementById('editPromoStrategy').value;
+  const select = document.getElementById('editActivationMethod');
+  if (!select) return;
+  const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+  if (blocked) {
+    select.value = 'AM';
+    select.querySelector('option[value="Promobot"]').disabled = true;
+  } else {
+    select.querySelector('option[value="Promobot"]').disabled = false;
+  }
+  updateEditStartDateConstraint();
+}
+
+function updateEditStartDateConstraint() {
+  const select = document.getElementById('editActivationMethod');
+  const startInput = document.getElementById('editStartDate');
+  if (!select || !startInput) return;
+  if (select.value === 'AM') {
+    startInput.removeAttribute('min');
+  } else {
+    startInput.min = getCurrentWeekMondayDate();
+  }
+}
     /* ========================================================= */
     /* BPP TOGGLE */
     /* ========================================================= */
@@ -2852,236 +2878,249 @@ function handlePromoPurposeChange() {
 
     function submitPromo() {
 
-      const partnerName =
-        document.getElementById('partnerInput').value.trim();
+  const partnerName =
+    document.getElementById('partnerInput').value.trim();
 
-      if (!partnerName) {
-        alert('Please select a partner!');
+  if (!partnerName) {
+    alert('Please select a partner!');
+    return;
+  }
+
+  const isMultiple =
+    document.getElementById('multipleCampaigns')?.checked === true;
+
+  const promoType =
+    document.getElementById('promoType').value;
+
+  const promoStrategy =
+    document.getElementById('promoStrategy').value;
+
+  const bppDiscount =
+    document.getElementById('bppDiscount').value;
+
+  if (promoStrategy === 'BPP' && !bppDiscount) {
+    alert('Please enter BPP Discount.');
+    return;
+  }
+
+  const basePromoData = {
+    partnerName: partnerName,
+    storeAddressId: getSelectedStoreAddresses(),
+    promoPurpose:
+      document.getElementById('promoPurpose').value,
+    pitched:
+      document.getElementById('pitched').value,
+    confirmed:
+      document.getElementById('confirmed').value,
+    activationMethod:
+      document.getElementById('activationMethod').value,
+    budgetSource:
+      document.getElementById('budgetSource').value,
+    promoType: promoType,
+    promoStrategy: promoStrategy,
+    discount:
+      document.getElementById('discount').value,
+    bppDiscount: bppDiscount,
+    cofunding:
+      document.getElementById('cofunding').value,
+    mbs:
+      document.getElementById('mbs').value
+  };
+
+  // Promocje self-setup AM (nie przez Promobota) są tylko do statystyk,
+  // więc dowolna data startu jest OK i pomijamy zasadę "tylko poniedziałek".
+  const isSelfSetupAM = basePromoData.activationMethod === 'AM';
+
+  const promotionsToSubmit = [];
+
+  if (isMultiple) {
+
+    const campaignCount = getCampaignCount();
+
+    for (let i = 0; i < campaignCount; i++) {
+
+      const campaignStart =
+        document.getElementById(`campaignStart_${i}`).value;
+
+      const campaignEnd =
+        document.getElementById(`campaignEnd_${i}`).value;
+
+      if (!campaignStart || !campaignEnd) {
+        alert(`Campaign #${i + 1}: please select Start Date and End Date.`);
         return;
       }
 
-      const isMultiple =
-        document.getElementById('multipleCampaigns')?.checked === true;
+      const start =
+        new Date(campaignStart + 'T00:00:00');
 
-      const promoType =
-        document.getElementById('promoType').value;
+      const end =
+        new Date(campaignEnd + 'T00:00:00');
 
-      const promoStrategy =
-        document.getElementById('promoStrategy').value;
-
-      const bppDiscount =
-        document.getElementById('bppDiscount').value;
-
-      if (promoStrategy === 'BPP' && !bppDiscount) {
-        alert('Please enter BPP Discount.');
+      const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+      if (!isSelfSetupAM && start < minMonday) {
+        alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
+        return;
+      }
+      if (end < start) {
+        alert(`Campaign #${i + 1}: End Date cannot be before Start Date.`);
         return;
       }
 
-      const basePromoData = {
-        partnerName: partnerName,
-        storeAddressId: getSelectedStoreAddresses(),
-        promoPurpose:
-          document.getElementById('promoPurpose').value,
-        pitched:
-          document.getElementById('pitched').value,
-        confirmed:
-          document.getElementById('confirmed').value,
-        activationMethod:
-          document.getElementById('activationMethod').value,
-        budgetSource:
-          document.getElementById('budgetSource').value,
-        promoType: promoType,
-        promoStrategy: promoStrategy,
-        discount:
-          document.getElementById('discount').value,
-        bppDiscount: bppDiscount,
-        cofunding:
-          document.getElementById('cofunding').value,
-        mbs:
-          document.getElementById('mbs').value
-      };
+      const duration =
+        Math.floor(
+          (end - start) /
+          (1000 * 60 * 60 * 24)
+        ) + 1;
 
-      const promotionsToSubmit = [];
-
-      if (isMultiple) {
-
-        const campaignCount = getCampaignCount();
-
-        for (let i = 0; i < campaignCount; i++) {
-
-          const campaignStart =
-            document.getElementById(`campaignStart_${i}`).value;
-
-          const campaignEnd =
-            document.getElementById(`campaignEnd_${i}`).value;
-
-          if (!campaignStart || !campaignEnd) {
-            alert(`Campaign #${i + 1}: please select Start Date and End Date.`);
-            return;
-          }
-
-          const start =
-            new Date(campaignStart + 'T00:00:00');
-
-          const end =
-            new Date(campaignEnd + 'T00:00:00');
-
-          const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-          if (start < minMonday) {
-            alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
-            return;
-          }
-          if (end < start) {
-            alert(`Campaign #${i + 1}: End Date cannot be before Start Date.`);
-            return;
-          }
-
-          const duration =
-            Math.floor(
-              (end - start) /
-              (1000 * 60 * 60 * 24)
-            ) + 1;
-
-          if (duration > 30) {
-            alert(
-              `Campaign #${i + 1}: Promotions can have a maximum duration of 30 days.\n\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.`
-            );
-            return;
-          }
-
-          const campaignProducts = getCampaignProductsForSubmit(i);
-
-          if (promoType !== 'BASKET_PERCENTAGE' && !campaignProducts) {
-            alert(`Campaign #${i + 1}: please select at least one product.`);
-            return;
-          }
-
-          promotionsToSubmit.push({
-            ...basePromoData,
-            startDate: campaignStart,
-            endDate: campaignEnd,
-            coverage:
-              promoType === 'BASKET_PERCENTAGE'
-                ? '100.0%'
-                : calcCampaignCoverage(i).toFixed(1) + '%',
-            products: campaignProducts
-          });
-        }
-
-      } else {
-
-        const startDate =
-          document.getElementById('startDate').value;
-
-        const endDate =
-          document.getElementById('endDate').value;
-
-        if (!startDate || !endDate) {
-          alert('Please select Start Date and End Date.');
-          return;
-        }
-
-        const start =
-          new Date(startDate + 'T00:00:00');
-
-        const end =
-          new Date(endDate + 'T00:00:00');
-
-        // Blokada daty wcześniejszej niż bieżący poniedziałek
-        const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-        if (start < minMonday) {
-          alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
-          return;
-        }
-
-        if (end < start) {
-          alert('End Date cannot be before Start Date.');
-          return;
-        }
-
-        const duration =
-          Math.floor(
-            (end - start) /
-            (1000 * 60 * 60 * 24)
-          ) + 1;
-
-        if (duration > 30) {
-          alert(
-            'Promotion cannot be longer than 30 days.\n\n⚠️ Promotions can have a maximum duration of 30 days.\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.'
-          );
-          return;
-        }
-
-        const selectedProducts =
-          getSelectedProductsForSubmit();
-
-        if (
-          promoType !== 'BASKET_PERCENTAGE' &&
-          selectedProducts === ''
-        ) {
-          alert('Please select at least one product!');
-          return;
-        }
-
-        promotionsToSubmit.push({
-          ...basePromoData,
-          startDate: startDate,
-          endDate: endDate,
-          coverage:
-            promoType === 'BASKET_PERCENTAGE'
-              ? '100.0%'
-              : document.getElementById('coverageGauge').innerText,
-          products:
-            promoType === 'BASKET_PERCENTAGE'
-              ? 'ALL MENU'
-              : selectedProducts
-        });
+      if (duration > 30) {
+        alert(
+          `Campaign #${i + 1}: Promotions can have a maximum duration of 30 days.\n\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.`
+        );
+        return;
       }
 
-      setSubmitPromoLoading(true);
+      const campaignProducts = getCampaignProductsForSubmit(i);
 
-      function submitNext(index, results) {
-
-        if (index >= promotionsToSubmit.length) {
-
-          setSubmitPromoLoading(false);
-
-          const count = promotionsToSubmit.length;
-          const ids = results.map(function(result) {
-            return result && result.id ? result.id : '';
-          }).filter(Boolean);
-
-          alert(
-            count === 1
-              ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
-              : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
-          );
-
-          resetForm();
-          switchTab('tab2');
-          return;
-        }
-
-        google.script.run
-          .withSuccessHandler(function(res) {
-            results.push(res || {});
-            submitNext(index + 1, results);
-          })
-          .withFailureHandler(function(err) {
-            setSubmitPromoLoading(false);
-
-            alert(
-              'Błąd zapisu kampanii #' + (index + 1) + ': ' +
-              (err && err.message ? err.message : err)
-            );
-          })
-          .submitPromotionToMasterLog(
-            promotionsToSubmit[index]
-          );
+      if (promoType !== 'BASKET_PERCENTAGE' && !campaignProducts) {
+        alert(`Campaign #${i + 1}: please select at least one product.`);
+        return;
       }
 
-      submitNext(0, []);
+      promotionsToSubmit.push({
+        ...basePromoData,
+        startDate: campaignStart,
+        endDate: campaignEnd,
+        coverage:
+          promoType === 'BASKET_PERCENTAGE'
+            ? '100.0%'
+            : calcCampaignCoverage(i).toFixed(1) + '%',
+        products: campaignProducts
+      });
     }
+
+  } else {
+
+    const startDate =
+      document.getElementById('startDate').value;
+
+    const endDate =
+      document.getElementById('endDate').value;
+
+    if (!startDate || !endDate) {
+      alert('Please select Start Date and End Date.');
+      return;
+    }
+
+    const start =
+      new Date(startDate + 'T00:00:00');
+
+    const end =
+      new Date(endDate + 'T00:00:00');
+
+    // Blokada daty wcześniejszej niż bieżący poniedziałek (nie dotyczy promocji
+    // ustawianych samodzielnie przez AM, poza PromoBotem — one służą tylko do statystyk).
+    const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+    if (!isSelfSetupAM && start < minMonday) {
+      alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
+      return;
+    }
+
+    if (end < start) {
+      alert('End Date cannot be before Start Date.');
+      return;
+    }
+
+    const duration =
+      Math.floor(
+        (end - start) /
+        (1000 * 60 * 60 * 24)
+      ) + 1;
+
+    if (duration > 30) {
+      alert(
+        'Promotion cannot be longer than 30 days.\n\n⚠️ Promotions can have a maximum duration of 30 days.\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.'
+      );
+      return;
+    }
+
+    const selectedProducts =
+      getSelectedProductsForSubmit();
+
+    if (
+      promoType !== 'BASKET_PERCENTAGE' &&
+      selectedProducts === ''
+    ) {
+      alert('Please select at least one product!');
+      return;
+    }
+
+    promotionsToSubmit.push({
+      ...basePromoData,
+      startDate: startDate,
+      endDate: endDate,
+      coverage:
+        promoType === 'BASKET_PERCENTAGE'
+          ? '100.0%'
+          : document.getElementById('coverageGauge').innerText,
+      products:
+        promoType === 'BASKET_PERCENTAGE'
+          ? 'ALL MENU'
+          : selectedProducts
+    });
+  }
+
+  setSubmitPromoLoading(true);
+
+  function submitNext(index, results) {
+
+    if (index >= promotionsToSubmit.length) {
+
+      setSubmitPromoLoading(false);
+
+      const count = promotionsToSubmit.length;
+      const ids = results.map(function(result) {
+        return result && result.id ? result.id : '';
+      }).filter(Boolean);
+
+      if (isSelfSetupAM) {
+        alert(
+          count === 1
+            ? 'Promocja zgłoszona i automatycznie zaakceptowana! ID: ' + ids[0] + '.'
+            : count + ' promocje zgłoszone i automatycznie zaakceptowane!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+        );
+      } else {
+        alert(
+          count === 1
+            ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
+            : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+        );
+      }
+
+      resetForm();
+      switchTab(isSelfSetupAM ? 'tab3' : 'tab2');
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        results.push(res || {});
+        submitNext(index + 1, results);
+      })
+      .withFailureHandler(function(err) {
+        setSubmitPromoLoading(false);
+
+        alert(
+          'Błąd zapisu kampanii #' + (index + 1) + ': ' +
+          (err && err.message ? err.message : err)
+        );
+      })
+      .submitPromotionToMasterLog(
+        promotionsToSubmit[index]
+      );
+  }
+
+  submitNext(0, []);
+}
 
 
     function getSelectedProductsForSubmit() {
