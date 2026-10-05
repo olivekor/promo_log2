@@ -193,8 +193,8 @@ function getPartnerProducts(partnerName) {
       product_name,
       ROUND(SAFE_DIVIDE(product_gmv, SUM(product_gmv) OVER ()) * 100, 2) AS product_gmv_share_pct
     FROM product_sales
-    ORDER BY times_bought DESC, product_gmv DESC
-    LIMIT 50;
+    ORDER BY product_gmv_share_pct DESC
+    LIMIT 350;
   `;
 
   var request = BigQuery.newQueryRequest();
