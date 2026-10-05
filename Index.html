@@ -2111,8 +2111,12 @@ function handlePromoPurposeChange() {
 
       const summaryTable = document.getElementById('btuSummaryTable');
       if (summaryTable) {
+        const btuTopCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
         summaryTable.innerHTML = (s.cities || []).map(function(c) {
-          return '<tr class="border-t border-gray-100">' +
+          const rowClass = btuTopCities.indexOf(c.city) !== -1
+            ? 'border-t border-gray-100 bg-yellow-100'
+            : 'border-t border-gray-100';
+          return '<tr class="' + rowClass + '">' +
             '<td class="px-3 py-2 font-bold">' + escapeHtml(c.city) + '</td>' +
             '<td class="px-3 py-2 text-right font-bold">' + pct1(c.totalWeight) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
