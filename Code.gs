@@ -2877,7 +2877,19 @@ function makeBTUSummary_(rows) {
     };
   });
 
-  list.sort(function(a,b) { return b.totalWeight - a.totalWeight || a.city.localeCompare(b.city); });
+  // Top cities always lead the list, in this fixed order; everything else
+  // follows sorted by % GMV descending, same as before.
+  var BTU_TOP_CITIES = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
+  list.sort(function(a, b) {
+    var aTop = BTU_TOP_CITIES.indexOf(a.city);
+    var bTop = BTU_TOP_CITIES.indexOf(b.city);
+    if (aTop !== -1 || bTop !== -1) {
+      if (aTop === -1) return 1;
+      if (bTop === -1) return -1;
+      return aTop - bTop;
+    }
+    return b.totalWeight - a.totalWeight || a.city.localeCompare(b.city);
+  });
 
   var total = rows.length;
   var totalWeight = rows.reduce(function(sum, r) { return sum + (Number(r.gmvWeight) || 0); }, 0);
