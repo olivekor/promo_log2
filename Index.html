@@ -166,6 +166,15 @@
     6. Back to University
   </button>
 
+  <button
+    type="button"
+    onclick="switchTab('tab7')"
+    id="nav-tab7"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
+  >
+    7. Promo Forecast
+  </button>
+
 </div>
 
 
@@ -533,6 +542,25 @@
 
       </div>
 
+
+      <div>
+
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          MBS € (Min. Basket Size)
+          <span class="text-gray-400 text-[10px]">(SXGY)</span>
+        </label>
+
+        <input
+          type="number"
+          id="mbs"
+          min="0"
+          step="0.5"
+          placeholder="e.g. 20"
+          class="w-full px-3 py-2 border rounded-lg text-sm"
+        >
+
+      </div>
+
     </div>
 
   </div>
@@ -627,6 +655,31 @@
 
     </div>
 
+  </div>
+
+  <!-- FORECAST PREVIEW -->
+  <div class="glovo-card p-6 space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">
+          4. Forecast Preview
+        </h3>
+        <p class="text-[11px] text-gray-500 mt-1">
+          Same calculator as the Promo Forecast tab. Uses the partner, dates, type, discounts, MBS and products above.
+          With multiple campaigns the preview shows campaign #1.
+        </p>
+      </div>
+      <button
+        type="button"
+        onclick="runCreatePromoForecast()"
+        class="glovo-yellow px-4 py-2 rounded-lg text-xs font-bold text-black hover:bg-yellow-400 whitespace-nowrap"
+      >
+        Calculate forecast
+      </button>
+    </div>
+    <div id="createForecastResult" class="text-xs text-gray-400">
+      Fill in the form and click Calculate forecast.
+    </div>
   </div>
 
 </div>
@@ -1036,6 +1089,105 @@
 
     </div>
 
+  </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- TAB 7 - PROMO FORECAST -->
+<!-- ========================================================= -->
+
+<div id="tab7" class="p-8 hidden bg-gray-50 space-y-6">
+
+  <div class="glovo-card p-6 space-y-4">
+    <div>
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Promo Forecast</h3>
+      <p class="text-[11px] text-gray-500 mt-1">
+        Forecast a promotion before creating it. Uses the Partners and Matrix tabs of this Promo Log. Nothing is saved.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Partner Name</label>
+        <div class="flex space-x-2">
+          <input type="text" id="fcPartner" list="partnersDatalist" placeholder="Start typing... (e.g. KFC)"
+            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+            onchange="fcLoadProducts()">
+          <button type="button" onclick="fcLoadProducts()"
+            class="glovo-yellow px-4 py-2 rounded-lg text-xs font-bold text-black hover:bg-yellow-400">Load</button>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+        <input type="date" id="fcStartDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+        <input type="date" id="fcEndDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Promo Type</label>
+        <select id="fcPromoType" onchange="fcRecalcCoverage()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+          <option value="PERCENTAGE_DISCOUNT">PERCENTAGE_DISCOUNT</option>
+          <option value="BASKET_PERCENTAGE">SXGY (BASKET_PERCENTAGE)</option>
+          <option value="TWO_FOR_ONE">TWO_FOR_ONE</option>
+          <option value="FREE_DELIVERY">FREE_DELIVERY</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Promo Strategy</label>
+        <select id="fcPromoStrategy" onchange="fcToggleBpp()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+          <option value="Standard">Standard</option>
+          <option value="BPP">BPP</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Standard Discount (%)</label>
+        <input type="number" id="fcDiscount" min="0" max="100" placeholder="20" class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">BPP Discount (%)</label>
+        <input type="number" id="fcBppDiscount" min="0" max="100" placeholder="30" disabled class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-100">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Co-funding (%)</label>
+        <input type="number" id="fcCofunding" min="0" max="100" placeholder="50" class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">MBS € (SXGY)</label>
+        <input type="number" id="fcMbs" min="0" step="0.5" placeholder="e.g. 20" class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2 glovo-card p-6">
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">Products on promo</h3>
+      <div id="fcLoading" class="hidden text-xs text-gray-500 py-4 font-semibold">
+        <span class="loading-spinner mr-2"></span>Loading top products from BigQuery...
+      </div>
+      <div id="fcProductsList" class="max-h-60 overflow-y-auto border rounded-lg p-2 divide-y text-xs">
+        <p class="text-gray-400 p-2">Select a partner above to fetch Bestsellers.</p>
+      </div>
+    </div>
+    <div class="glovo-card p-6 flex flex-col justify-between items-center text-center">
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">Menu Coverage</h3>
+      <div id="fcCoverage" class="text-4xl font-black text-black my-2">0.0%</div>
+      <div id="fcCoverageNote" class="text-xs font-bold text-gray-400 uppercase">Waiting for products...</div>
+      <div class="w-full pt-4 border-t flex justify-end">
+        <button type="button" onclick="runForecastTab()"
+          class="glovo-green px-5 py-2 rounded-lg text-xs font-bold text-white hover:bg-emerald-600">Calculate forecast</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="glovo-card p-6">
+    <div id="fcResult" class="text-xs text-gray-400">Fill in the form and click Calculate forecast.</div>
   </div>
 
 </div>
@@ -1761,60 +1913,60 @@ function handlePromoPurposeChange() {
       renderAllCampaignProductPickers();
     }
 
-    function handleActivationMethodChange() {
-      const type = document.getElementById('promoType').value;
-      const strategy = document.getElementById('promoStrategy').value;
-      const select = document.getElementById('activationMethod');
-      if (!select) return;
-      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
-      if (blocked) {
-        select.value = 'AM';
-        select.querySelector('option[value="Promobot"]').disabled = true;
-      } else {
-        select.querySelector('option[value="Promobot"]').disabled = false;
-      }
-      updateStartDateConstraint();
-    }
+function handleActivationMethodChange() {
+  const type = document.getElementById('promoType').value;
+  const strategy = document.getElementById('promoStrategy').value;
+  const select = document.getElementById('activationMethod');
+  if (!select) return;
+  const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+  if (blocked) {
+    select.value = 'AM';
+    select.querySelector('option[value="Promobot"]').disabled = true;
+  } else {
+    select.querySelector('option[value="Promobot"]').disabled = false;
+  }
+  updateStartDateConstraint();
+}
 
-    // AM self-setup promos are only for internal stats, not run by PromoBot,
-    // so the Monday-only start date rule (needed for the bot's weekly upload) doesn't apply.
-    function updateStartDateConstraint() {
-      const select = document.getElementById('activationMethod');
-      const startInput = document.getElementById('startDate');
-      if (!select || !startInput) return;
-      if (select.value === 'AM') {
-        startInput.removeAttribute('min');
-      } else {
-        startInput.min = getCurrentWeekMondayDate();
-      }
-    }
+// Promocje self-setup AM służą tylko do statystyk, nie są obsługiwane przez
+// Promobota, więc zasada "tylko poniedziałek" (potrzebna do cotygodniowego
+// uploadu bota) ich nie dotyczy.
+function updateStartDateConstraint() {
+  const select = document.getElementById('activationMethod');
+  const startInput = document.getElementById('startDate');
+  if (!select || !startInput) return;
+  if (select.value === 'AM') {
+    startInput.removeAttribute('min');
+  } else {
+    startInput.min = getCurrentWeekMondayDate();
+  }
+}
 
-    function handleEditActivationMethodChange() {
-      const type = document.getElementById('editPromoType').value;
-      const strategy = document.getElementById('editPromoStrategy').value;
-      const select = document.getElementById('editActivationMethod');
-      if (!select) return;
-      const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
-      if (blocked) {
-        select.value = 'AM';
-        select.querySelector('option[value="Promobot"]').disabled = true;
-      } else {
-        select.querySelector('option[value="Promobot"]').disabled = false;
-      }
-      updateEditStartDateConstraint();
-    }
+function handleEditActivationMethodChange() {
+  const type = document.getElementById('editPromoType').value;
+  const strategy = document.getElementById('editPromoStrategy').value;
+  const select = document.getElementById('editActivationMethod');
+  if (!select) return;
+  const blocked = type === 'BASKET_PERCENTAGE' || strategy === 'BPP';
+  if (blocked) {
+    select.value = 'AM';
+    select.querySelector('option[value="Promobot"]').disabled = true;
+  } else {
+    select.querySelector('option[value="Promobot"]').disabled = false;
+  }
+  updateEditStartDateConstraint();
+}
 
-    function updateEditStartDateConstraint() {
-      const select = document.getElementById('editActivationMethod');
-      const startInput = document.getElementById('editStartDate');
-      if (!select || !startInput) return;
-      if (select.value === 'AM') {
-        startInput.removeAttribute('min');
-      } else {
-        startInput.min = getCurrentWeekMondayDate();
-      }
-    }
-
+function updateEditStartDateConstraint() {
+  const select = document.getElementById('editActivationMethod');
+  const startInput = document.getElementById('editStartDate');
+  if (!select || !startInput) return;
+  if (select.value === 'AM') {
+    startInput.removeAttribute('min');
+  } else {
+    startInput.min = getCurrentWeekMondayDate();
+  }
+}
     /* ========================================================= */
     /* BPP TOGGLE */
     /* ========================================================= */
@@ -1860,7 +2012,8 @@ function handlePromoPurposeChange() {
         'tab3',
         'tab4',
         'tab5',
-        'tab6'
+        'tab6',
+        'tab7'
       ];
 
 
@@ -2729,247 +2882,249 @@ function handlePromoPurposeChange() {
 
     function submitPromo() {
 
-      const partnerName =
-        document.getElementById('partnerInput').value.trim();
+  const partnerName =
+    document.getElementById('partnerInput').value.trim();
 
-      if (!partnerName) {
-        alert('Please select a partner!');
+  if (!partnerName) {
+    alert('Please select a partner!');
+    return;
+  }
+
+  const isMultiple =
+    document.getElementById('multipleCampaigns')?.checked === true;
+
+  const promoType =
+    document.getElementById('promoType').value;
+
+  const promoStrategy =
+    document.getElementById('promoStrategy').value;
+
+  const bppDiscount =
+    document.getElementById('bppDiscount').value;
+
+  if (promoStrategy === 'BPP' && !bppDiscount) {
+    alert('Please enter BPP Discount.');
+    return;
+  }
+
+  const basePromoData = {
+    partnerName: partnerName,
+    storeAddressId: getSelectedStoreAddresses(),
+    promoPurpose:
+      document.getElementById('promoPurpose').value,
+    pitched:
+      document.getElementById('pitched').value,
+    confirmed:
+      document.getElementById('confirmed').value,
+    activationMethod:
+      document.getElementById('activationMethod').value,
+    budgetSource:
+      document.getElementById('budgetSource').value,
+    promoType: promoType,
+    promoStrategy: promoStrategy,
+    discount:
+      document.getElementById('discount').value,
+    bppDiscount: bppDiscount,
+    cofunding:
+      document.getElementById('cofunding').value,
+    mbs:
+      document.getElementById('mbs').value
+  };
+
+  // Promocje self-setup AM (nie przez Promobota) są tylko do statystyk,
+  // więc dowolna data startu jest OK i pomijamy zasadę "tylko poniedziałek".
+  const isSelfSetupAM = basePromoData.activationMethod === 'AM';
+
+  const promotionsToSubmit = [];
+
+  if (isMultiple) {
+
+    const campaignCount = getCampaignCount();
+
+    for (let i = 0; i < campaignCount; i++) {
+
+      const campaignStart =
+        document.getElementById(`campaignStart_${i}`).value;
+
+      const campaignEnd =
+        document.getElementById(`campaignEnd_${i}`).value;
+
+      if (!campaignStart || !campaignEnd) {
+        alert(`Campaign #${i + 1}: please select Start Date and End Date.`);
         return;
       }
 
-      const isMultiple =
-        document.getElementById('multipleCampaigns')?.checked === true;
+      const start =
+        new Date(campaignStart + 'T00:00:00');
 
-      const promoType =
-        document.getElementById('promoType').value;
+      const end =
+        new Date(campaignEnd + 'T00:00:00');
 
-      const promoStrategy =
-        document.getElementById('promoStrategy').value;
-
-      const bppDiscount =
-        document.getElementById('bppDiscount').value;
-
-      if (promoStrategy === 'BPP' && !bppDiscount) {
-        alert('Please enter BPP Discount.');
+      const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+      if (!isSelfSetupAM && start < minMonday) {
+        alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
+        return;
+      }
+      if (end < start) {
+        alert(`Campaign #${i + 1}: End Date cannot be before Start Date.`);
         return;
       }
 
-      const basePromoData = {
-        partnerName: partnerName,
-        storeAddressId: getSelectedStoreAddresses(),
-        promoPurpose:
-          document.getElementById('promoPurpose').value,
-        pitched:
-          document.getElementById('pitched').value,
-        confirmed:
-          document.getElementById('confirmed').value,
-        activationMethod:
-          document.getElementById('activationMethod').value,
-        budgetSource:
-          document.getElementById('budgetSource').value,
-        promoType: promoType,
-        promoStrategy: promoStrategy,
-        discount:
-          document.getElementById('discount').value,
-        bppDiscount: bppDiscount,
-        cofunding:
-          document.getElementById('cofunding').value
-      };
+      const duration =
+        Math.floor(
+          (end - start) /
+          (1000 * 60 * 60 * 24)
+        ) + 1;
 
-      // Promos an AM sets up themselves (not via PromoBot) are only tracked for stats,
-      // so they're free to pick any start date and skip the bot's Monday-only rule.
-      const isSelfSetupAM = basePromoData.activationMethod === 'AM';
-
-      const promotionsToSubmit = [];
-
-      if (isMultiple) {
-
-        const campaignCount = getCampaignCount();
-
-        for (let i = 0; i < campaignCount; i++) {
-
-          const campaignStart =
-            document.getElementById(`campaignStart_${i}`).value;
-
-          const campaignEnd =
-            document.getElementById(`campaignEnd_${i}`).value;
-
-          if (!campaignStart || !campaignEnd) {
-            alert(`Campaign #${i + 1}: please select Start Date and End Date.`);
-            return;
-          }
-
-          const start =
-            new Date(campaignStart + 'T00:00:00');
-
-          const end =
-            new Date(campaignEnd + 'T00:00:00');
-
-          const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-          if (!isSelfSetupAM && start < minMonday) {
-            alert(`Campaign #${i + 1}: Data rozpoczęcia nie może być wcześniejsza niż bieżący poniedziałek (${getCurrentWeekMondayDate()})!`);
-            return;
-          }
-          if (end < start) {
-            alert(`Campaign #${i + 1}: End Date cannot be before Start Date.`);
-            return;
-          }
-
-          const duration =
-            Math.floor(
-              (end - start) /
-              (1000 * 60 * 60 * 24)
-            ) + 1;
-
-          if (duration > 30) {
-            alert(
-              `Campaign #${i + 1}: Promotions can have a maximum duration of 30 days.\n\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.`
-            );
-            return;
-          }
-
-          const campaignProducts = getCampaignProductsForSubmit(i);
-
-          if (promoType !== 'BASKET_PERCENTAGE' && !campaignProducts) {
-            alert(`Campaign #${i + 1}: please select at least one product.`);
-            return;
-          }
-
-          promotionsToSubmit.push({
-            ...basePromoData,
-            startDate: campaignStart,
-            endDate: campaignEnd,
-            coverage:
-              promoType === 'BASKET_PERCENTAGE'
-                ? '100.0%'
-                : calcCampaignCoverage(i).toFixed(1) + '%',
-            products: campaignProducts
-          });
-        }
-
-      } else {
-
-        const startDate =
-          document.getElementById('startDate').value;
-
-        const endDate =
-          document.getElementById('endDate').value;
-
-        if (!startDate || !endDate) {
-          alert('Please select Start Date and End Date.');
-          return;
-        }
-
-        const start =
-          new Date(startDate + 'T00:00:00');
-
-        const end =
-          new Date(endDate + 'T00:00:00');
-
-        // Blokada daty wcześniejszej niż bieżący poniedziałek (nie dotyczy promocji ustawianych
-        // samodzielnie przez AM, poza PromoBotem — one służą tylko do statystyk).
-        const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
-        if (!isSelfSetupAM && start < minMonday) {
-          alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
-          return;
-        }
-
-        if (end < start) {
-          alert('End Date cannot be before Start Date.');
-          return;
-        }
-
-        const duration =
-          Math.floor(
-            (end - start) /
-            (1000 * 60 * 60 * 24)
-          ) + 1;
-
-        if (duration > 30) {
-          alert(
-            'Promotion cannot be longer than 30 days.\n\n⚠️ Promotions can have a maximum duration of 30 days.\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.'
-          );
-          return;
-        }
-
-        const selectedProducts =
-          getSelectedProductsForSubmit();
-
-        if (
-          promoType !== 'BASKET_PERCENTAGE' &&
-          selectedProducts === ''
-        ) {
-          alert('Please select at least one product!');
-          return;
-        }
-
-        promotionsToSubmit.push({
-          ...basePromoData,
-          startDate: startDate,
-          endDate: endDate,
-          coverage:
-            promoType === 'BASKET_PERCENTAGE'
-              ? '100.0%'
-              : document.getElementById('coverageGauge').innerText,
-          products:
-            promoType === 'BASKET_PERCENTAGE'
-              ? 'ALL MENU'
-              : selectedProducts
-        });
+      if (duration > 30) {
+        alert(
+          `Campaign #${i + 1}: Promotions can have a maximum duration of 30 days.\n\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.`
+        );
+        return;
       }
 
-      setSubmitPromoLoading(true);
+      const campaignProducts = getCampaignProductsForSubmit(i);
 
-      function submitNext(index, results) {
-
-        if (index >= promotionsToSubmit.length) {
-
-          setSubmitPromoLoading(false);
-
-          const count = promotionsToSubmit.length;
-          const ids = results.map(function(result) {
-            return result && result.id ? result.id : '';
-          }).filter(Boolean);
-
-          if (isSelfSetupAM) {
-            alert(
-              count === 1
-                ? 'Promocja zgłoszona i automatycznie zaakceptowana! ID: ' + ids[0] + '.'
-                : count + ' promocje zgłoszone i automatycznie zaakceptowane!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
-            );
-          } else {
-            alert(
-              count === 1
-                ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
-                : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
-            );
-          }
-
-          resetForm();
-          switchTab(isSelfSetupAM ? 'tab3' : 'tab2');
-          return;
-        }
-
-        google.script.run
-          .withSuccessHandler(function(res) {
-            results.push(res || {});
-            submitNext(index + 1, results);
-          })
-          .withFailureHandler(function(err) {
-            setSubmitPromoLoading(false);
-
-            alert(
-              'Błąd zapisu kampanii #' + (index + 1) + ': ' +
-              (err && err.message ? err.message : err)
-            );
-          })
-          .submitPromotionToMasterLog(
-            promotionsToSubmit[index]
-          );
+      if (promoType !== 'BASKET_PERCENTAGE' && !campaignProducts) {
+        alert(`Campaign #${i + 1}: please select at least one product.`);
+        return;
       }
 
-      submitNext(0, []);
+      promotionsToSubmit.push({
+        ...basePromoData,
+        startDate: campaignStart,
+        endDate: campaignEnd,
+        coverage:
+          promoType === 'BASKET_PERCENTAGE'
+            ? '100.0%'
+            : calcCampaignCoverage(i).toFixed(1) + '%',
+        products: campaignProducts
+      });
     }
+
+  } else {
+
+    const startDate =
+      document.getElementById('startDate').value;
+
+    const endDate =
+      document.getElementById('endDate').value;
+
+    if (!startDate || !endDate) {
+      alert('Please select Start Date and End Date.');
+      return;
+    }
+
+    const start =
+      new Date(startDate + 'T00:00:00');
+
+    const end =
+      new Date(endDate + 'T00:00:00');
+
+    // Blokada daty wcześniejszej niż bieżący poniedziałek (nie dotyczy promocji
+    // ustawianych samodzielnie przez AM, poza PromoBotem — one służą tylko do statystyk).
+    const minMonday = new Date(getCurrentWeekMondayDate() + 'T00:00:00');
+    if (!isSelfSetupAM && start < minMonday) {
+      alert('⚠️ Błąd: Data rozpoczęcia promocji nie może być wcześniejsza niż bieżący poniedziałek (' + getCurrentWeekMondayDate() + ')!');
+      return;
+    }
+
+    if (end < start) {
+      alert('End Date cannot be before Start Date.');
+      return;
+    }
+
+    const duration =
+      Math.floor(
+        (end - start) /
+        (1000 * 60 * 60 * 24)
+      ) + 1;
+
+    if (duration > 30) {
+      alert(
+        'Promotion cannot be longer than 30 days.\n\n⚠️ Promotions can have a maximum duration of 30 days.\nIf you want to run consecutive campaigns for several months, please use Multiple consecutive campaigns.'
+      );
+      return;
+    }
+
+    const selectedProducts =
+      getSelectedProductsForSubmit();
+
+    if (
+      promoType !== 'BASKET_PERCENTAGE' &&
+      selectedProducts === ''
+    ) {
+      alert('Please select at least one product!');
+      return;
+    }
+
+    promotionsToSubmit.push({
+      ...basePromoData,
+      startDate: startDate,
+      endDate: endDate,
+      coverage:
+        promoType === 'BASKET_PERCENTAGE'
+          ? '100.0%'
+          : document.getElementById('coverageGauge').innerText,
+      products:
+        promoType === 'BASKET_PERCENTAGE'
+          ? 'ALL MENU'
+          : selectedProducts
+    });
+  }
+
+  setSubmitPromoLoading(true);
+
+  function submitNext(index, results) {
+
+    if (index >= promotionsToSubmit.length) {
+
+      setSubmitPromoLoading(false);
+
+      const count = promotionsToSubmit.length;
+      const ids = results.map(function(result) {
+        return result && result.id ? result.id : '';
+      }).filter(Boolean);
+
+      if (isSelfSetupAM) {
+        alert(
+          count === 1
+            ? 'Promocja zgłoszona i automatycznie zaakceptowana! ID: ' + ids[0] + '.'
+            : count + ' promocje zgłoszone i automatycznie zaakceptowane!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+        );
+      } else {
+        alert(
+          count === 1
+            ? 'Promocja zgłoszona pomyślnie! ID: ' + ids[0] + '. Trafiła do kolejki PENDING APPROVAL.'
+            : count + ' promocje zgłoszone pomyślnie!\n\nKażda kampania została zapisana jako osobny rekord w Master_Log.\n\nIDs:\n' + ids.join('\n')
+        );
+      }
+
+      resetForm();
+      switchTab(isSelfSetupAM ? 'tab3' : 'tab2');
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        results.push(res || {});
+        submitNext(index + 1, results);
+      })
+      .withFailureHandler(function(err) {
+        setSubmitPromoLoading(false);
+
+        alert(
+          'Błąd zapisu kampanii #' + (index + 1) + ': ' +
+          (err && err.message ? err.message : err)
+        );
+      })
+      .submitPromotionToMasterLog(
+        promotionsToSubmit[index]
+      );
+  }
+
+  submitNext(0, []);
+}
 
 
     function getSelectedProductsForSubmit() {
@@ -3852,6 +4007,8 @@ function handlePromoPurposeChange() {
       document.getElementById('discount').value = '';
       document.getElementById('bppDiscount').value = '';
       document.getElementById('cofunding').value = '';
+      document.getElementById('mbs').value = '';
+      document.getElementById('createForecastResult').innerHTML = 'Fill in the form and click Calculate forecast.';
       document.getElementById('promoStrategy').value = 'Standard';
       document.getElementById('pitched').value = 'Yes';
 
@@ -3970,6 +4127,270 @@ function openEditModalByRowIndex(rowIndex) {
   const modal = document.getElementById('editModal');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
+}
+
+
+/* ========================================================= */
+/* PROMO FORECAST (tab 7 + preview in Create Promo)           */
+/* Server: getPromoForecast() = same calculator as Master_Log */
+/* ========================================================= */
+
+let fcProducts = [];
+
+function fcToggleBpp() {
+  const isBpp = document.getElementById('fcPromoStrategy').value === 'BPP';
+  const input = document.getElementById('fcBppDiscount');
+  input.disabled = !isBpp;
+  input.classList.toggle('bg-gray-100', !isBpp);
+  if (!isBpp) input.value = '';
+}
+
+function fcIsWholeMenuType(type) {
+  return type === 'BASKET_PERCENTAGE' || type === 'FREE_DELIVERY';
+}
+
+function fcLoadProducts() {
+  const name = document.getElementById('fcPartner').value.trim();
+  if (!name) return;
+
+  document.getElementById('fcLoading').classList.remove('hidden');
+  document.getElementById('fcProductsList').innerHTML = '';
+
+  google.script.run
+    .withSuccessHandler(fcRenderProducts)
+    .withFailureHandler(function (err) {
+      document.getElementById('fcLoading').classList.add('hidden');
+      handleError(err);
+    })
+    .getPartnerProducts(name);
+}
+
+function fcRenderProducts(products) {
+  document.getElementById('fcLoading').classList.add('hidden');
+  fcProducts = Array.isArray(products) ? products : [];
+
+  if (!fcProducts.length) {
+    document.getElementById('fcProductsList').innerHTML =
+      '<p class="text-red-500 p-2">No products found for this partner in BQ.</p>';
+    fcRecalcCoverage();
+    return;
+  }
+
+  document.getElementById('fcProductsList').innerHTML = fcProducts.map(function (product, idx) {
+    const share = Number(product.gmv_share_pct) || 0;
+    return `
+      <label class="flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer">
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" value="${idx}" onchange="fcRecalcCoverage()"
+            class="fc-product-check rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="font-medium text-gray-800">${escapeHtml(product.product_name)}</span>
+        </div>
+        <span class="font-bold text-gray-500">${share.toFixed(2)}% GMV</span>
+      </label>`;
+  }).join('');
+
+  fcRecalcCoverage();
+}
+
+function fcSelectedProducts() {
+  const names = [];
+  let total = 0;
+  document.querySelectorAll('.fc-product-check:checked').forEach(function (checkbox) {
+    const product = fcProducts[Number(checkbox.value)];
+    if (product) {
+      names.push(product.product_name);
+      total += Number(product.gmv_share_pct) || 0;
+    }
+  });
+  return { names: names, coveragePct: total };
+}
+
+function fcRecalcCoverage() {
+  const type = document.getElementById('fcPromoType').value;
+  const gauge = document.getElementById('fcCoverage');
+  const note = document.getElementById('fcCoverageNote');
+
+  if (fcIsWholeMenuType(type)) {
+    gauge.innerText = '100.0%';
+    note.innerText = 'Whole menu — products not needed';
+    return;
+  }
+
+  const selected = fcSelectedProducts();
+  gauge.innerText = selected.coveragePct.toFixed(1) + '%';
+  note.innerText = selected.names.length
+    ? selected.names.length + ' product(s) selected'
+    : 'Waiting for products...';
+}
+
+function fcValidate(data) {
+  if (!data.partnerName) return 'Please select a partner.';
+  if (!data.startDate || !data.endDate) return 'Please select Start Date and End Date.';
+  if (data.endDate < data.startDate) return 'End Date cannot be before Start Date.';
+  if (data.promoStrategy === 'BPP' && !data.bppDiscount) return 'Please enter BPP Discount.';
+  if (!fcIsWholeMenuType(data.promoType) && !data.products) return 'Please select at least one product.';
+  return '';
+}
+
+function runForecastTab() {
+  const type = document.getElementById('fcPromoType').value;
+  const selected = fcSelectedProducts();
+  const data = {
+    partnerName: document.getElementById('fcPartner').value.trim(),
+    startDate: document.getElementById('fcStartDate').value,
+    endDate: document.getElementById('fcEndDate').value,
+    promoType: type,
+    promoStrategy: document.getElementById('fcPromoStrategy').value,
+    discount: document.getElementById('fcDiscount').value,
+    bppDiscount: document.getElementById('fcBppDiscount').value,
+    cofunding: document.getElementById('fcCofunding').value,
+    mbs: document.getElementById('fcMbs').value,
+    budgetSource: 'BP Budget',
+    coverage: fcIsWholeMenuType(type) ? '100.0%' : selected.coveragePct.toFixed(2) + '%',
+    products: fcIsWholeMenuType(type) ? 'ALL MENU' : selected.names.join(', ')
+  };
+  requestForecast('fcResult', data);
+}
+
+function runCreatePromoForecast() {
+  const type = document.getElementById('promoType').value;
+  const isMultiple = document.getElementById('multipleCampaigns')?.checked === true;
+
+  let startDate = document.getElementById('startDate').value;
+  let endDate = document.getElementById('endDate').value;
+  let products = getSelectedProductsForSubmit();
+  let coverage = document.getElementById('coverageGauge').innerText;
+
+  if (isMultiple) {
+    startDate = (document.getElementById('campaignStart_0') || {}).value || '';
+    endDate = (document.getElementById('campaignEnd_0') || {}).value || '';
+    products = getCampaignProductsForSubmit(0);
+    coverage = calcCampaignCoverage(0).toFixed(2) + '%';
+  }
+
+  const data = {
+    partnerName: document.getElementById('partnerInput').value.trim(),
+    startDate: startDate,
+    endDate: endDate,
+    promoType: type,
+    promoStrategy: document.getElementById('promoStrategy').value,
+    discount: document.getElementById('discount').value,
+    bppDiscount: document.getElementById('bppDiscount').value,
+    cofunding: document.getElementById('cofunding').value,
+    mbs: document.getElementById('mbs').value,
+    budgetSource: document.getElementById('budgetSource').value,
+    coverage: type === 'BASKET_PERCENTAGE' ? '100.0%' : coverage,
+    products: type === 'BASKET_PERCENTAGE' ? 'ALL MENU' : products
+  };
+  requestForecast('createForecastResult', data);
+}
+
+function requestForecast(containerId, data) {
+  const container = document.getElementById(containerId);
+  const error = fcValidate(data);
+  if (error) {
+    container.innerHTML = '<p class="text-red-500 font-semibold">' + escapeHtml(error) + '</p>';
+    return;
+  }
+
+  container.innerHTML = '<p class="text-gray-500 font-semibold"><span class="loading-spinner mr-2"></span>Calculating...</p>';
+
+  google.script.run
+    .withSuccessHandler(function (calc) { renderForecast(containerId, calc); })
+    .withFailureHandler(function (err) {
+      container.innerHTML = '<p class="text-red-500 font-semibold">Forecast failed: ' +
+        escapeHtml(err && err.message ? err.message : err) + '</p>';
+    })
+    .getPromoForecast(data);
+}
+
+function fcMoney(v) {
+  if (v === null || v === undefined || v === '' || isNaN(Number(v))) return '-';
+  return '€' + Math.round(Number(v)).toLocaleString('en-US');
+}
+
+function fcNum(v, digits) {
+  if (v === null || v === undefined || v === '' || isNaN(Number(v))) return '-';
+  return Number(v).toLocaleString('en-US', { maximumFractionDigits: digits || 0, minimumFractionDigits: digits || 0 });
+}
+
+function fcPct(v) {
+  if (v === null || v === undefined || v === '' || isNaN(Number(v))) return '-';
+  return (Number(v) * 100).toFixed(1) + '%';
+}
+
+function fcRows(rows) {
+  return rows.map(function (row) {
+    return `
+      <div class="flex justify-between py-1.5 border-b border-gray-100">
+        <span class="text-gray-600">${escapeHtml(row[0])}</span>
+        <span class="font-bold text-gray-900 ${row[2] || ''}">${escapeHtml(row[1])}</span>
+      </div>`;
+  }).join('');
+}
+
+function renderForecast(containerId, c) {
+  const container = document.getElementById(containerId);
+  if (!c) {
+    container.innerHTML = '<p class="text-red-500 font-semibold">No forecast returned.</p>';
+    return;
+  }
+
+  const warnings = [];
+  if (!c.partnerFound) warnings.push('Partner not found in the Partners tab — no baseline GMV/orders.');
+  if (c.gmvUpliftMultiplier === null) warnings.push('No Matrix row for key ' + (c.matrixKey || '-') + ' — uplift and cost cannot be calculated.');
+  if (c.coverageScale >= 3) warnings.push('Coverage scale capped at 3x — products on promo cover much more of the menu than historical promos.');
+
+  const roiClass = c.roi === null ? '' : (c.roi >= 1 ? 'text-emerald-600' : 'text-red-500');
+  const levelText = c.matrixLevel ? c.matrixLevel + (c.matrixN ? ' · n=' + fcNum(c.matrixN) : '') : '-';
+
+  container.innerHTML = `
+    ${warnings.length ? '<div class="mb-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-700 font-semibold space-y-1">' +
+      warnings.map(function (w) { return '<div>⚠️ ' + escapeHtml(w) + '</div>'; }).join('') + '</div>' : ''}
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div class="rounded-lg bg-gray-50 p-3"><div class="text-[10px] font-bold text-gray-500 uppercase">ROI</div><div class="text-2xl font-black ${roiClass}">${fcNum(c.roi, 2)}</div></div>
+      <div class="rounded-lg bg-gray-50 p-3"><div class="text-[10px] font-bold text-gray-500 uppercase">Promo cost</div><div class="text-2xl font-black text-gray-900">${fcMoney(c.estimatedPromoCost)}</div></div>
+      <div class="rounded-lg bg-gray-50 p-3"><div class="text-[10px] font-bold text-gray-500 uppercase">uGMV</div><div class="text-2xl font-black text-gray-900">${fcMoney(c.upliftGmv)}</div></div>
+      <div class="rounded-lg bg-gray-50 p-3"><div class="text-[10px] font-bold text-gray-500 uppercase">uOrders</div><div class="text-2xl font-black text-gray-900">${fcNum(c.upliftOrders)}</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+      <div>
+        <h4 class="text-[11px] font-bold text-gray-800 uppercase tracking-wider mb-2">Outcome</h4>
+        ${fcRows([
+          ['Paid by Glovo', fcMoney(c.paidByGlovo)],
+          ['Paid by Partner', fcMoney(c.paidByPartner)],
+          ['% uO (orders uplift)', fcPct(c.upliftOrdersPct)],
+          ['cost / uO', c.costPerUpliftOrder === null ? '-' : '€' + fcNum(c.costPerUpliftOrder, 2)],
+          ['Incremental GMV (×0.4)', fcMoney(c.incrementalGmv)],
+          ['Incremental Orders (×0.4)', fcNum(c.incrementalOrders)]
+        ])}
+      </div>
+      <div>
+        <h4 class="text-[11px] font-bold text-gray-800 uppercase tracking-wider mb-2">Assumptions</h4>
+        ${fcRows([
+          ['Menu Coverage', fcPct(c.coverage)],
+          ['Promo products uplift multiplier', fcNum(c.promoProductsUpliftMultiplier, 2)],
+          ['Coverage scale', fcNum(c.coverageScale, 2) + 'x'],
+          ['Duration (days)', fcNum(c.duration)],
+          ['Maximum discount', fcPct(c.maxDiscount)],
+          ['Prime share', fcPct(c.primeShare)],
+          ['Total GMV uplift multiplier', fcNum(c.gmvUpliftMultiplier, 3)],
+          ['Total orders uplift multiplier', fcNum(c.ordersUpliftMultiplier, 3)],
+          ['Cost intensity', fcPct(c.costIntensity)],
+          ['Penetration', fcPct(c.penetration)],
+          ['Baseline total GMV', fcMoney(c.baselineGmv)],
+          ['Baseline total orders', fcNum(c.baselineOrders)],
+          ['Partner baseline AOV', c.baselineAov === null ? '-' : '€' + fcNum(c.baselineAov, 2)],
+          ['Forecasted GMV during promo', fcMoney(c.forecastedGmv)],
+          ['Forecasted orders during promo', fcNum(c.forecastedOrders)],
+          ['Segmentation', c.segmentation || '-'],
+          ['Matrix key', c.matrixKey || '-'],
+          ['Matrix level', levelText]
+        ])}
+      </div>
+    </div>`;
 }
 
 </script>
