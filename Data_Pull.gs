@@ -34,7 +34,7 @@ var DATA_PULL_PARTNER_AM_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1z
 var DATA_PULL_FORCE_INCLUDE_STORE_IDS = ['600658'];
 
 function dataPullBuildPartnersQuery_() {
-  var having = 'HAVING SUM(a.addr_daily_orders) > 1';
+  var having = 'HAVING SUM(a.addr_daily_orders) > 0';
   if (DATA_PULL_FORCE_INCLUDE_STORE_IDS.length) {
     var idList = DATA_PULL_FORCE_INCLUDE_STORE_IDS.map(function(id) {
       return "'" + String(id).replace(/'/g, "") + "'";
