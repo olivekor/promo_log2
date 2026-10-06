@@ -24,7 +24,27 @@ var DATA_PULL_STATUS_SHEET = 'Data_Pull_Status';
 var DATA_PULL_PARTNER_AM_HEADER = 'Account Manager';
 var DATA_PULL_PARTNER_AM_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1zrTCU_2Vg5NSMM08nwUbLyxb_iAl-3NITt__JjCPDKE/edit?gid=1233870954#gid=1233870954';
 
-var DATA_PULL_PARTNERS_QUERY = `WITH stores AS (
+// Store IDs to force into Partners even though they don't yet have enough
+// BigQuery order history to pass the normal ">1 order" volume filter below
+// (e.g. a brand-new partner/virtual brand just added from a Partner Request,
+// like "Woda Klubopiekarnia" / 600658). They still need SOME order history
+// in the 180-day window to show up at all (the query can't invent orders
+// that were never recorded) — this only waives the minimum-volume check.
+// Remove an entry once the partner naturally qualifies on its own.
+var DATA_PULL_FORCE_INCLUDE_STORE_IDS = ['600658'];
+
+function dataPullBuildPartnersQuery_() {
+  var having = 'HAVING SUM(a.addr_daily_orders) > 1';
+  if (DATA_PULL_FORCE_INCLUDE_STORE_IDS.length) {
+    var idList = DATA_PULL_FORCE_INCLUDE_STORE_IDS.map(function(id) {
+      return "'" + String(id).replace(/'/g, "") + "'";
+    }).join(', ');
+    having += '\n    OR LOGICAL_OR(CAST(a.store_id AS STRING) IN (' + idList + '))';
+  }
+  return DATA_PULL_PARTNERS_QUERY_TEMPLATE.replace('__FORCE_INCLUDE_HAVING__', having);
+}
+
+var DATA_PULL_PARTNERS_QUERY_TEMPLATE = `WITH stores AS (
     SELECT DISTINCT
         CAST(store_id AS STRING) AS store_id,
         CASE
@@ -153,7 +173,7 @@ FROM last56_per_address a
 JOIN stores s ON a.store_id = s.store_id
 LEFT JOIN brand_segment bs ON s.store_name = bs.store_name
 GROUP BY 1, 2
-HAVING SUM(a.addr_daily_orders) > 1
+__FORCE_INCLUDE_HAVING__
 ORDER BY daily_gmv_eur DESC`;
 
 var DATA_PULL_MATRIX_QUERY = `WITH promo_definition AS (
@@ -740,7 +760,7 @@ function dataPullLog_(dataset, status, rowCount, message, jobId) {
 function refreshPartners() {
   var label = 'Partners';
   try {
-    var result = dataPullRunBigQuery_(DATA_PULL_PARTNERS_QUERY, label);
+    var result = dataPullRunBigQuery_(dataPullBuildPartnersQuery_(), label);
     var partnersSheet = dataPullWriteTable_(DATA_PULL_PARTNERS_SHEET, result);
     dataPullAddPartnerAMFormula_(partnersSheet, result);
     dataPullLog_(label, 'SUCCESS', result.values.length, 'Partners refreshed successfully. Account Manager is linked with XLOOKUP from the daily refreshed PL (adjusted to SMB) sheet.', result.jobId);
