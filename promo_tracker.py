@@ -28,6 +28,10 @@
 #     in the HIT discounts of that day. GMV of HIT-only orders is moved into
 #     DH_GMV_non_promoted_orders so it no longer counts as incremental GMV.
 #
+# INCREMENTAL orders/GMV are summed over the same deduped store-days as the
+# cost (not prorated from episodes), so monthly ROI = incremental_gmv / cost
+# compares the same days. uplift_orders/uplift_gmv stay episode-prorated.
+#
 # OUTPUT: pushed straight to a Google Sheet (see SHEET_ID in __main__).
 # Requires: pip install google-api-python-client
 # ADC must carry the spreadsheets scope:
@@ -350,6 +354,21 @@ def month_to_ym(m):
 def ym_to_str(ym):
     ym = np.asarray(ym, np.int64)
     return np.array([f"{v // 100:04d}-{v % 100:02d}" for v in ym], dtype=object)
+
+
+# Day-level columns summed over the cost day set. Incremental metrics are
+# computed from the SAME store-days as the cost, so ROI compares like with like.
+DAY_IDX = [I_COF, I_COST, I_PORD, I_GMV, I_NPGMV]
+
+
+def _day_metrics(v):
+    """(n, len(DAY_IDX)) day sums -> cost + incremental columns."""
+    return {
+        'co_funding':         v[:, 0],
+        'total_promo_cost':   v[:, 1],
+        'incremental_orders': round_half_up(v[:, 2] * 0.4, 2),
+        'incremental_gmv':    round_half_up((v[:, 3] - v[:, 4]) * 0.4, 2),
+    }
 
 
 def _group_sum(keys, values, sort_order=None):
@@ -678,12 +697,16 @@ def run_promo_calculations(daily, episodes, addr_map):
     ap = pd.DataFrame({'addr': addr_index.get_indexer(ap['store_address_id']),
                        'p_code': partner_index.get_indexer(ap['clean_partner_name'])})
     ap = ap[ap['p_code'] >= 0]
+    # only the baseline-vs-promo uplift is prorated from episodes; incremental
+    # orders/GMV come from the day-level cost pass below
+    UPLIFT_COLS = ['uplift_orders', 'uplift_gmv']
     uplift_agg = (uplift_all.merge(ap, on='addr', how='inner')
-                  .groupby(['p_code', 'ym', 'promo_type'], as_index=False)[METRIC_COLS].sum())
+                  .groupby(['p_code', 'ym', 'promo_type'], as_index=False)[UPLIFT_COLS].sum())
 
     # =====================================================================
-    # COSTS  (== fact_episode_days -> promo_day_flags -> costs)
+    # COSTS + INCREMENTAL  (== fact_episode_days -> promo_day_flags -> costs)
     # Day-level dedupe: a day counts ONCE no matter how many episodes cover it.
+    # Incremental orders/GMV are summed over exactly these days too.
     # =====================================================================
     ns_top3_ids = np.flatnonzero(mult_rem > 0)               # (key, is_top3) combos
     d_rows, d_days = explode_span(u_s[ns_top3_ids // 2], u_e[ns_top3_ids // 2])
@@ -706,7 +729,7 @@ def run_promo_calculations(daily, episodes, addr_map):
     keep = dr.partner[g_pos] >= 0                            # == clean_partner_name NOT NULL
     g_rows, g_pos = g_rows[keep], g_pos[keep]
     c_key = dr.partner[g_pos].astype(np.int64) * 1_000_000 + dr.ym[g_pos]
-    c_vals = dr.vals[g_pos][:, [I_COF, I_COST]]
+    c_vals = dr.vals[g_pos][:, DAY_IDX]
     c_ke, c_ao = uday_ke[g_rows], uday_ao[g_rows]
 
     c_order = np.argsort(c_key, kind='stable')
@@ -715,8 +738,7 @@ def run_promo_calculations(daily, episodes, addr_map):
     def cost_slice(mask, promo_type):
         k, v = _group_sum(ck[mask], cv[mask], np.arange(int(mask.sum())))
         return pd.DataFrame({'p_code': k // 1_000_000, 'ym': k % 1_000_000,
-                             'promo_type': promo_type,
-                             'co_funding': v[:, 0], 'total_promo_cost': v[:, 1]})
+                             'promo_type': promo_type, **_day_metrics(v)})
 
     all_true = np.ones(len(ck), bool)
     cost_frames = [
@@ -734,10 +756,9 @@ def run_promo_calculations(daily, episodes, addr_map):
     sg_rows, sg_pos = dr.gather(s_key // 1_000_000, s_key % 1_000_000)
     sg_pos = sg_pos[dr.partner[sg_pos] >= 0]
     s_gkey = dr.partner[sg_pos].astype(np.int64) * 1_000_000 + dr.ym[sg_pos]
-    k, v = _group_sum(s_gkey, dr.vals[sg_pos][:, [I_COF, I_COST]])
+    k, v = _group_sum(s_gkey, dr.vals[sg_pos][:, DAY_IDX])
     cost_frames.append(pd.DataFrame({'p_code': k // 1_000_000, 'ym': k % 1_000_000,
-                                     'promo_type': 'SME',
-                                     'co_funding': v[:, 0], 'total_promo_cost': v[:, 1]}))
+                                     'promo_type': 'SME', **_day_metrics(v)}))
     costs = pd.concat(cost_frames, ignore_index=True)
 
     # =====================================================================
@@ -781,16 +802,16 @@ def run_promo_calculations(daily, episodes, addr_map):
         e_mask = c_ke
         e_key = (dr.partner[g_pos][e_mask].astype(np.int64) * 100
                  + ev_rank[uday_ev[g_rows][e_mask]])
-        k, v = _group_sum(e_key, dr.vals[g_pos][e_mask][:, [I_COF, I_COST]])
+        k, v = _group_sum(e_key, dr.vals[g_pos][e_mask][:, DAY_IDX])
         ev_of_rank = np.argsort(ev_rank)
         ke_final = pd.DataFrame({'p_code': k // 100, 'ev': ev_of_rank[k % 100],
-                                 'co_funding': v[:, 0], 'total_promo_cost': v[:, 1]})
+                                 **_day_metrics(v)})
 
-        ke_ev_up = (ke_tot[['key_id', 'ev'] + EPISODE_COLS]
+        ke_ev_up = (ke_tot[['key_id', 'ev'] + EPISODE_COLS[:2]]
                     .assign(addr=lambda d: u_addr[d['key_id'].to_numpy()])
                     .merge(ap, on='addr', how='inner')
-                    .groupby(['p_code', 'ev'], as_index=False)[EPISODE_COLS].sum()
-                    .rename(columns=dict(zip(EPISODE_COLS, METRIC_COLS))))
+                    .groupby(['p_code', 'ev'], as_index=False)[EPISODE_COLS[:2]].sum()
+                    .rename(columns=dict(zip(EPISODE_COLS[:2], UPLIFT_COLS))))
         ke_final = ke_final.merge(ke_ev_up, on=['p_code', 'ev'], how='left')
         ke_final['ym'] = ev_ym[ke_final['ev'].to_numpy()]
         ke_final['promo_type'] = kev['event_id'].to_numpy()[ke_final['ev'].to_numpy()]
