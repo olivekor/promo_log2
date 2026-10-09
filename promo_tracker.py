@@ -25,7 +25,8 @@
 #   * Q_DAILY: the daily store-level cost / co-funding / promo_orders from the
 #     tracker are scaled down by the HIT share of that store-day (computed from
 #     pricing_discounts), so a non-HIT episode covering a day no longer drags
-#     in the HIT discounts of that day.
+#     in the HIT discounts of that day. GMV of HIT-only orders is moved into
+#     DH_GMV_non_promoted_orders so it no longer counts as incremental GMV.
 #
 # OUTPUT: pushed straight to a Google Sheet (see SHEET_ID in __main__).
 # Requires: pip install google-api-python-client
@@ -174,18 +175,30 @@ promo_orders_pd AS (
       AND pd.partner_promotion_id IS NOT NULL
     GROUP BY 1
 ),
--- per sklep x dzień: udział HIT w koszcie / co-fundingu / zamówieniach promo
-hit_share AS (
+-- wszystkie zamówienia PL per sklep x dzień (mianownik dla udziału HIT w GMV)
+pl_orders AS (
     SELECT
+        CAST(od.order_id AS STRING)         AS order_id,
         CAST(od.store_address_id AS STRING) AS store_address_id,
         od.p_creation_date,
+        COALESCE(od.order_total_purchase_eur, 0) AS gmv
+    FROM `fulfillment-dwh-production.curated_data_shared_glovo.order_descriptors__order_descriptors_v3` od
+    WHERE od.p_creation_date >= '2025-11-01'
+      AND od.order_country_code = 'PL'
+),
+-- per sklep x dzień: udział HIT w koszcie / co-fundingu / zamówieniach promo / GMV
+hit_share AS (
+    SELECT
+        po.store_address_id,
+        po.p_creation_date,
         SAFE_DIVIDE(SUM(o.hit_cost),   SUM(o.all_cost))   AS hit_cost_share,
         SAFE_DIVIDE(SUM(o.hit_cofund), SUM(o.all_cofund)) AS hit_cofund_share,
-        SAFE_DIVIDE(COUNTIF(o.all_hit), COUNT(*))         AS hit_orders_share
-    FROM promo_orders_pd o
-    JOIN `fulfillment-dwh-production.curated_data_shared_glovo.order_descriptors__order_descriptors_v3` od
-      ON CAST(od.order_id AS STRING) = o.order_id
-     AND od.p_creation_date >= '2025-11-01'
+        SAFE_DIVIDE(COUNTIF(o.all_hit), COUNT(o.order_id)) AS hit_orders_share,
+        -- GMV zamówień z WYŁĄCZNIE rabatami HIT jako udział w całym GMV sklepu
+        SAFE_DIVIDE(SUM(IF(o.all_hit, po.gmv, 0)), SUM(po.gmv)) AS hit_gmv_share
+    FROM pl_orders po
+    LEFT JOIN promo_orders_pd o
+      ON o.order_id = po.order_id
     GROUP BY 1, 2
     HAVING SUM(o.hit_cost) > 0 OR COUNTIF(o.all_hit) > 0
 )
@@ -199,7 +212,13 @@ SELECT
     dp.total_promotool_discounts * (1 - COALESCE(h.hit_cost_share, 0))
         AS total_promotool_discounts,
     dp.promo_orders * (1 - COALESCE(h.hit_orders_share, 0)) AS promo_orders,
-    dp.DH_GMV_non_promoted_orders,
+    -- GMV zamówień tylko-HIT przesunięte z "promoted" do "non-promoted",
+    -- żeby nie wchodziło do incremental_gmv (= DH_GMV - non_promoted)
+    LEAST(
+        COALESCE(dp.DH_GMV_non_promoted_orders, 0)
+          + COALESCE(dp.DH_GMV, 0) * COALESCE(h.hit_gmv_share, 0),
+        GREATEST(COALESCE(dp.DH_GMV, 0), COALESCE(dp.DH_GMV_non_promoted_orders, 0))
+    ) AS DH_GMV_non_promoted_orders,
     sm.clean_partner_name
 FROM `fulfillment-dwh-production.curated_data_shared_glovo.promos_okr__promos_okr_tracker_v2` dp
 LEFT JOIN store_metadata sm
