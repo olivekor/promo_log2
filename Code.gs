@@ -2625,7 +2625,8 @@ function ensureBTUHeader_(sheet) {
     '>=5% OFF Prime?',
     'Linked Promo ID',
     'Last Updated',
-    'Source'
+    'Source',
+    '>=20% OFF Promo?'
   ];
 
   if (sheet.getMaxColumns() < headers.length) {
@@ -2708,7 +2709,7 @@ function getBTUAmTeamMap_() {
 // a future seasonal tracker the same way BTU and Christmas work.
 var TRACKER_DEFINITIONS = {
   'BTU': { promoPurpose: 'back to university' },
-  'Christmas': { promoPurpose: 'christmas' }
+  'Christmas': { promoPurpose: 'get ready for christmas' }
 };
 
 function getBTUTracker() {
@@ -2754,7 +2755,7 @@ function getTracker_(sheetName) {
   // 1. READ BTU SHEET
   // ---------------------------------------------------------
 
-  var values = sheet.getRange(2, 1, lastRow - 1, 13).getValues();
+  var values = sheet.getRange(2, 1, lastRow - 1, 14).getValues();
 
   Logger.log('BTU DEBUG 1 - values rows: ' + values.length);
   Logger.log('BTU DEBUG 1a - first raw row: ' + JSON.stringify(values[0]));
@@ -2922,7 +2923,10 @@ function getTracker_(sheetName) {
       lastUpdated: r[11] instanceof Date
         ? r[11].toISOString()
         : String(r[11] || ''),
-      source: String(r[12] || 'Initial list')
+      source: String(r[12] || 'Initial list'),
+      // GRFC-specific second discount tier (Top Sellers, wk48-49): >=20% OFF.
+      // Appended as column N so BTU's existing A-M layout never had to shift.
+      highDiscount20: String(r[13] || '')
     };
   });
 
@@ -2999,11 +3003,13 @@ function makeBTUSummary_(rows) {
         totalWeight: 0,
         promoWeight: 0,
         highDiscountWeight: 0,
+        highDiscount20Weight: 0,
         bppWeight: 0,
         prime5Weight: 0,
         total: 0,
         onPromo: 0,
         highDiscount: 0,
+        highDiscount20: 0,
         prime10: 0,
         prime5: 0
       };
@@ -3015,11 +3021,13 @@ function makeBTUSummary_(rows) {
 
     var onPromo = String(r.onPromo || '').trim().toLowerCase() === 'yes';
     var high = String(r.highDiscount || '').trim().toLowerCase() === 'yes';
+    var high20 = String(r.highDiscount20 || '').trim().toLowerCase() === 'yes';
     var prime = String(r.prime10 || '').trim().toLowerCase() === 'yes';
     var prime5 = String(r.prime5 || '').trim().toLowerCase() === 'yes';
 
     if (onPromo) { c.onPromo++; c.promoWeight += w; }
     if (high) { c.highDiscount++; c.highDiscountWeight += w; }
+    if (high20) { c.highDiscount20++; c.highDiscount20Weight += w; }
     if (prime) { c.prime10++; }
     if (prime5) { c.prime5++; c.prime5Weight += w; }
 
@@ -3041,10 +3049,12 @@ function makeBTUSummary_(rows) {
       totalWeight: c.totalWeight,
       onPromo: c.onPromo,
       highDiscount: c.highDiscount,
+      highDiscount20: c.highDiscount20,
       prime10: c.prime10,
       prime5: c.prime5,
       promoRate: c.promoWeight,
       highDiscountRate: c.highDiscountWeight,
+      highDiscount20Rate: c.highDiscount20Weight,
       bppRate: c.bppWeight,
       prime5Rate: c.prime5Weight,
       // Keep the legacy naming for the UI.
@@ -3073,6 +3083,7 @@ function makeBTUSummary_(rows) {
   var totalWeight = rows.reduce(function(sum, r) { return sum + (Number(r.gmvWeight) || 0); }, 0);
   var onPromo = rows.filter(function(r){ return String(r.onPromo).toLowerCase() === 'yes'; });
   var highDiscount = rows.filter(function(r){ return String(r.highDiscount).toLowerCase() === 'yes'; });
+  var highDiscount20 = rows.filter(function(r){ return String(r.highDiscount20).toLowerCase() === 'yes'; });
   var prime10 = rows.filter(function(r){ return String(r.prime10).toLowerCase() === 'yes'; });
   var prime5 = rows.filter(function(r){ return String(r.prime5).toLowerCase() === 'yes'; });
 
@@ -3081,6 +3092,7 @@ function makeBTUSummary_(rows) {
     totalWeight: totalWeight,
     onPromo: onPromo.length,
     highDiscount: highDiscount.length,
+    highDiscount20: highDiscount20.length,
     prime10: prime10.length,
     prime5: prime5.length,
     promoRate: total ? onPromo.length / total : 0,
@@ -3128,7 +3140,7 @@ function saveTrackerRow_(sheetName, rowData) {
   var teamMeta = amTeamMap[amKey] || {};
   var team = String(teamMeta.team || rowData.team || '').trim();
 
-  sheet.getRange(rowIndex, 1, 1, 13).setValues([[
+  sheet.getRange(rowIndex, 1, 1, 14).setValues([[
     rowData.city || '',
     rowData.storeName || '',
     rowData.storeId || '',
@@ -3141,7 +3153,8 @@ function saveTrackerRow_(sheetName, rowData) {
     rowData.prime5 || '',
     rowData.linkedPromoId || '',
     new Date(),
-    rowData.source || 'Manual'
+    rowData.source || 'Manual',
+    rowData.highDiscount20 || ''
   ]]);
 
   return { status: 'SUCCESS', rowIndex: rowIndex, accountManager: accountManager, team: team, manager: managerMap[amKey] || '' };
@@ -3203,7 +3216,8 @@ function addTrackerPartner_(sheetName, rowData) {
     rowData.prime5 || '',
     '',
     new Date(),
-    'Manual'
+    'Manual',
+    rowData.highDiscount20 || ''
   ];
 
   sheet.appendRow(row);

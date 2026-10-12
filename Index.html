@@ -273,7 +273,7 @@
           <option value="Always on">Always on</option>
           <option value="Key Event">Key Event</option>
           <option value="Back to University">Back to University</option>
-          <option value="Christmas">Christmas</option>
+          <option value="Get Ready for Christmas">Get Ready for Christmas</option>
           <option value="Prime Days">Prime Days</option>
           <option value="December BCs campaign">December BCs campaign</option>
           <option value="Others">Others</option>
@@ -919,7 +919,7 @@
             <option value="Key Event">Key Event</option>
             <option value="Always on">Always on</option>
             <option value="Back to University">Back to University</option>
-            <option value="Christmas">Christmas</option>
+            <option value="Get Ready for Christmas">Get Ready for Christmas</option>
             <option value="Prime Days">Prime Days</option>
             <option value="December BCs campaign">December BCs campaign</option>
             <option value="Others">Others</option>
@@ -1223,7 +1223,7 @@
 
   <div id="btuNationalKpi"></div>
 
-  <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+  <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="glovo-card lg:col-span-2 overflow-x-auto">
@@ -1246,6 +1246,7 @@
               <th class="px-3 py-3 text-left">Manager</th>
               <th class="px-3 py-3 text-center">On promo?</th>
               <th class="px-3 py-3 text-center">≥30% / 2X1?</th>
+              <th class="px-3 py-3 text-center">≥20% OFF?</th>
               <th class="px-3 py-3 text-center">+10% Prime?</th>
               <th class="px-3 py-3 text-center">+5% Prime?</th>
               <th class="px-3 py-3"></th>
@@ -1270,6 +1271,7 @@
               <th class="px-3 py-3 text-right">% GMV</th>
               <th class="px-3 py-3 text-right">% GMV in Promo</th>
               <th class="px-3 py-3 text-right">% GMV ≥30%</th>
+              <th class="px-3 py-3 text-right">% GMV ≥20%</th>
               <th class="px-3 py-3 text-right">% GMV Prime</th>
               <th class="px-3 py-3 text-right">% GMV +5% Prime</th>
             </tr>
@@ -1309,6 +1311,11 @@
     <div>
       <span class="font-bold text-gray-700">% GMV ≥30%</span>
       → share of this city's BTU GMV Weight covered by a ≥30% OFF or 2X1 promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV ≥20%</span>
+      → not a BTU KPI (added for the GRFC tracker) - will be 0 here.
     </div>
 
     <div>
@@ -1391,7 +1398,7 @@
 
   <div id="xmasNationalKpi"></div>
 
-  <div id="xmasKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+  <div id="xmasKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="glovo-card lg:col-span-2 overflow-x-auto">
@@ -1414,6 +1421,7 @@
               <th class="px-3 py-3 text-left">Manager</th>
               <th class="px-3 py-3 text-center">On promo?</th>
               <th class="px-3 py-3 text-center">≥30% / 2X1?</th>
+              <th class="px-3 py-3 text-center">≥20% OFF?</th>
               <th class="px-3 py-3 text-center">+10% Prime?</th>
               <th class="px-3 py-3 text-center">+5% Prime?</th>
               <th class="px-3 py-3"></th>
@@ -1438,6 +1446,7 @@
               <th class="px-3 py-3 text-right">% GMV</th>
               <th class="px-3 py-3 text-right">% GMV in Promo</th>
               <th class="px-3 py-3 text-right">% GMV ≥30%</th>
+              <th class="px-3 py-3 text-right">% GMV ≥20%</th>
               <th class="px-3 py-3 text-right">% GMV Prime</th>
               <th class="px-3 py-3 text-right">% GMV +5% Prime</th>
             </tr>
@@ -1476,19 +1485,34 @@
 
     <div>
       <span class="font-bold text-gray-700">% GMV ≥30%</span>
-      → share of this city's Christmas GMV Weight covered by a ≥30% OFF or 2X1 promo.
+      → share of this city's Christmas GMV Weight covered by a ≥30% OFF or 2X1 promo
+      (Big Chain KPI, whole campaign: wk47-49).
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV ≥20%</span>
+      → share covered by a ≥20% OFF promo (Top Sellers / non-Big-Chain KPI, wk48-49 only,
+      once GRFC merges into Prime Week).
     </div>
 
     <div>
       <span class="font-bold text-gray-700">% GMV Prime</span>
-      → share of this city's Christmas GMV Weight covered by a ≥10% OFF Prime promo.
+      → share covered by a ≥10% OFF Prime (BPP) promo - this is the threshold that
+      matters for GRFC, not +5%.
     </div>
 
     <div>
       <span class="font-bold text-gray-700">% GMV +5% Prime</span>
-      → share of this city's Christmas GMV Weight covered by a ≥5% OFF Prime promo.
+      → legacy column, not a GRFC KPI.
     </div>
 
+  </div>
+
+  <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
+    <span class="font-bold text-gray-500">GRFC KPI cheat sheet (per Kasia, wk47-49):</span>
+    wk47 - Big Chain only, Super Savers -30% (or 2X1). wk48-49 - Big Chain stays at
+    -30%/2X1 for the whole campaign; everyone else (Top Sellers) moves to -20% OFF +
+    ≥10% OFF Prime (BPP), now merged with Prime Week.
   </div>
 
   <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
@@ -1677,7 +1701,7 @@
         <option value="Always on">Always on</option>
         <option value="Key Event">Key Event</option>
         <option value="Back to University">Back to University</option>
-        <option value="Christmas">Christmas</option>
+        <option value="Get Ready for Christmas">Get Ready for Christmas</option>
         <option value="Prime Days">Prime Days</option>
         <option value="December BCs campaign">December BCs campaign</option>
         <option value="Others">Others</option>
@@ -2410,7 +2434,7 @@ function updateEditStartDateConstraint() {
 
     const TRACKER_CONFIG = {
       btu: { sheetName: 'BTU', idPrefix: 'btu', getFn: 'getBTUTracker', purposeValue: 'Back to University' },
-      christmas: { sheetName: 'Christmas', idPrefix: 'xmas', getFn: 'getChristmasTracker', purposeValue: 'Christmas' }
+      christmas: { sheetName: 'Christmas', idPrefix: 'xmas', getFn: 'getChristmasTracker', purposeValue: 'Get Ready for Christmas' }
     };
 
     function yesNoSelect(trackerKey, value, field, idx) {
@@ -2464,6 +2488,7 @@ function updateEditStartDateConstraint() {
           [cfg.sheetName + ' partners', num0(s.total)],
           ['On promo', num0(s.onPromo)],
           ['≥30% / 2X1', num0(s.highDiscount)],
+          ['≥20% OFF', num0(s.highDiscount20)],
           ['+10% Prime', num0(s.prime10)],
           ['+5% Prime', num0(s.prime5)]
         ].map(function(k) {
@@ -2485,6 +2510,7 @@ function updateEditStartDateConstraint() {
             '<td class="px-3 py-2 text-right font-bold">' + pct1(c.totalWeight) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
+            '<td class="px-3 py-2 text-right">' + pct1(c.highDiscount20Rate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
             '<td class="px-3 py-2 text-right">' + pct1(c.prime5Rate) + '</td>' +
             '</tr>';
@@ -2509,6 +2535,7 @@ function updateEditStartDateConstraint() {
           '<td class="px-3 py-2 whitespace-nowrap">' + escapeHtml(r.manager || '') + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.onPromo, 'promo', idx) + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.highDiscount, 'high', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.highDiscount20, 'high20', idx) + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.prime10, 'prime', idx) + '</td>' +
           '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.prime5, 'prime5', idx) + '</td>' +
           '<td class="px-3 py-2 text-right"><button onclick="goToCreatePromoFromTracker(\'' + trackerKey + '\',' + idx + ')" class="px-2 py-1 rounded bg-yellow-500 text-black text-[10px] font-bold whitespace-nowrap">Create Promo</button></td>' +
@@ -2552,6 +2579,7 @@ function updateEditStartDateConstraint() {
         team: r.team,
         onPromo: document.getElementById(cfg.idPrefix + '-promo-' + idx).value,
         highDiscount: document.getElementById(cfg.idPrefix + '-high-' + idx).value,
+        highDiscount20: document.getElementById(cfg.idPrefix + '-high20-' + idx).value,
         prime10: document.getElementById(cfg.idPrefix + '-prime-' + idx).value,
         prime5: document.getElementById(cfg.idPrefix + '-prime5-' + idx).value,
         linkedPromoId: r.linkedPromoId,
