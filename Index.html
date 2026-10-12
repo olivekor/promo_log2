@@ -168,20 +168,20 @@
 
   <button
     type="button"
-    onclick="switchTab('tab7')"
-    id="nav-tab7"
-    class="px-5 py-2.5 text-gray-500 hover:text-black"
+    onclick="switchTab('tab8')"
+    id="nav-tab8"
+    class="px-5 py-2.5 text-red-700 hover:text-red-900 font-bold bg-red-50/60 rounded-t-lg"
   >
-    7. Promo Forecast
+    7. Get Ready for Christmas
   </button>
 
   <button
     type="button"
-    onclick="switchTab('tab8')"
-    id="nav-tab8"
-    class="px-5 py-2.5 text-purple-700 hover:text-purple-900 font-bold bg-purple-50/60 rounded-t-lg"
+    onclick="switchTab('tab7')"
+    id="nav-tab7"
+    class="px-5 py-2.5 text-gray-500 hover:text-black"
   >
-    8. Christmas
+    8. Promo Forecast
   </button>
 
 </div>
@@ -1391,16 +1391,16 @@
 <!-- TAB 8 - CHRISTMAS -->
 <!-- ========================================================= -->
 
-<div id="tab8" class="p-6 hidden bg-purple-50 space-y-6">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+<div id="tab8" class="p-6 hidden space-y-6" style="background: linear-gradient(180deg, #fef2f2 0%, #fffbeb 100%);">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-2xl p-5 shadow-lg text-white" style="background: linear-gradient(120deg, #7f1d1d 0%, #b91c1c 60%, #166534 100%);">
     <div>
-      <h2 class="text-xl font-extrabold text-purple-900">🎄 Christmas Tracker</h2>
-      <p class="text-xs text-purple-700 mt-1">Get Ready for Christmas • initial partner list + additional partners added by the team</p>
+      <h2 class="text-xl font-extrabold">🎄 Get Ready for Christmas Tracker</h2>
+      <p class="text-xs text-red-100 mt-1">Get Ready for Christmas • initial partner list + additional partners added by the team</p>
     </div>
     <div class="flex gap-2">
-      <button id="xmasSaveAllBtn" onclick="saveTrackerRowsAll('christmas')" disabled class="px-4 py-2 bg-purple-900 text-white rounded-lg text-xs font-bold opacity-40 cursor-not-allowed">Save All</button>
-      <button onclick="openTrackerAddModal('christmas')" class="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-bold hover:bg-purple-800">+ Add Partner</button>
-      <button onclick="loadTracker('christmas')" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90">Refresh</button>
+      <button id="xmasSaveAllBtn" onclick="saveTrackerRowsAll('christmas')" disabled class="px-4 py-2 bg-red-950 text-white rounded-lg text-xs font-bold opacity-40 cursor-not-allowed">Save All</button>
+      <button onclick="openTrackerAddModal('christmas')" class="px-4 py-2 bg-amber-400 text-red-900 rounded-lg text-xs font-bold hover:bg-amber-300">+ Add Partner</button>
+      <button onclick="loadTracker('christmas')" class="px-4 py-2 bg-white text-red-800 rounded-lg text-xs font-bold hover:bg-red-50">Refresh</button>
     </div>
   </div>
 
@@ -1409,17 +1409,17 @@
   <div id="xmasKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="glovo-card lg:col-span-2 overflow-x-auto">
-      <div class="p-5 border-b border-purple-100">
-        <h3 class="font-extrabold text-gray-900">Partner tracker</h3>
+    <div class="glovo-card lg:col-span-2 overflow-x-auto border-2 border-red-100">
+      <div class="p-5 border-b border-red-100 bg-red-50/60">
+        <h3 class="font-extrabold text-red-900">🎁 Partner tracker</h3>
         <p class="text-xs text-gray-500 mt-1">Edit cells freely, then click "Save All" once — no per-row save needed.</p>
         <div class="mt-3">
-          <input id="xmasSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterTracker('christmas')" class="w-full px-3 py-2 border rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-300">
+          <input id="xmasSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterTracker('christmas')" class="w-full px-3 py-2 border border-red-200 rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-red-300">
         </div>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-xs">
-          <thead class="bg-purple-50 text-gray-600 uppercase">
+          <thead class="bg-red-50 text-red-800 uppercase">
             <tr>
               <th class="px-3 py-3 text-left">City</th>
               <th class="px-3 py-3 text-left">Partner</th>
@@ -1438,111 +1438,41 @@
           <tbody id="xmasTable"></tbody>
         </table>
       </div>
-      <div id="xmasCount" class="px-5 py-3 text-[10px] text-gray-500 border-t border-gray-100"></div>
+      <div id="xmasCount" class="px-5 py-3 text-[10px] text-gray-500 border-t border-red-100"></div>
     </div>
 
-    <div class="glovo-card overflow-hidden">
-      <div class="p-5 border-b border-purple-100">
-        <h3 class="font-extrabold text-gray-900">Summary</h3>
-        <p class="text-xs text-gray-500 mt-1">Current Christmas tracker status by city</p>
+    <div class="glovo-card overflow-hidden border-2 border-red-100">
+      <div class="p-5" style="background: linear-gradient(120deg, #7f1d1d 0%, #b91c1c 100%);">
+        <h3 class="font-extrabold text-white">🎅 Summary</h3>
+        <p class="text-xs text-red-100 mt-1">Partners &amp; % GMV in Promo — top 6 cities + KTW</p>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full text-xs">
-          <thead class="bg-gray-50 text-gray-500 uppercase">
+          <thead class="bg-red-50 text-red-800 uppercase">
             <tr>
               <th class="px-3 py-3 text-left">City</th>
-              <th class="px-3 py-3 text-right">% GMV</th>
+              <th class="px-3 py-3 text-right">Partners</th>
               <th class="px-3 py-3 text-right">% GMV in Promo</th>
-              <th class="px-3 py-3 text-right">% GMV ≥30%</th>
-              <th class="px-3 py-3 text-right">% GMV ≥20%</th>
-              <th class="px-3 py-3 text-right">% GMV Prime</th>
-              <th class="px-3 py-3 text-right">% GMV +5% Prime</th>
             </tr>
           </thead>
           <tbody id="xmasSummaryTable"></tbody>
         </table>
       </div>
-      <div class="p-4 border-t border-gray-100 bg-gray-50">
-
-  <div class="flex gap-2 items-start">
-
-<div class="text-sm mt-0.5">💡</div>
-
-<div class="text-[10px] leading-relaxed text-gray-500">
-
-  <div class="font-extrabold text-gray-700 mb-1">
-    How to read the GMV metrics
-  </div>
-
-  <div class="mb-2">
-    These metrics are <span class="font-bold text-gray-700">GMV-weighted</span>,
-    not partner-count based.
-  </div>
-
-  <div class="space-y-0.5">
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV</span>
-      → total GMV Weight represented by Christmas partners in this city.
+      <div class="p-4 border-t border-red-100 bg-red-50/40 text-[10px] leading-relaxed text-gray-500">
+        <span class="font-bold text-red-700">% GMV in Promo</span> is weighted against
+        <span class="font-semibold">real total-Poland GMV</span> (pulled from BigQuery),
+        not just GMV of partners already sitting in this tracker. The big number above
+        is the same metric, blended across all of Poland.
+      </div>
     </div>
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV in Promo</span>
-      → share of this city's Christmas GMV Weight currently covered by a promo.
-    </div>
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV ≥30%</span>
-      → share of this city's Christmas GMV Weight covered by a ≥30% OFF or 2X1 promo
-      (Big Chain KPI, whole campaign: wk47-49).
-    </div>
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV ≥20%</span>
-      → share covered by a ≥20% OFF promo (Top Sellers / non-Big-Chain KPI, wk48-49 only,
-      once GRFC merges into Prime Week).
-    </div>
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV Prime</span>
-      → share covered by a ≥10% OFF Prime (BPP) promo - this is the threshold that
-      matters for GRFC, not +5%.
-    </div>
-
-    <div>
-      <span class="font-bold text-gray-700">% GMV +5% Prime</span>
-      → legacy column, not a GRFC KPI.
-    </div>
-
   </div>
-
-  <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
-    <span class="font-bold text-gray-500">GRFC KPI cheat sheet (per Kasia, wk47-49):</span>
-    wk47 - Big Chain only, Super Savers -30% (or 2X1). wk48-49 - Big Chain stays at
-    -30%/2X1 for the whole campaign; everyone else (Top Sellers) moves to -20% OFF +
-    ≥10% OFF Prime (BPP), now merged with Prime Week.
-  </div>
-
-  <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
-    <span class="font-bold text-gray-500">Note:</span>
-    the table above is <span class="font-semibold">city-scoped</span> (share of
-    that city's GMV). The total-Poland GMV figure is shown separately above,
-    at the top of this tab.
-  </div>
-
-</div>
-
-  </div>
-</div>
-</div>
-</div>
 </div>
 
 <!-- CHRISTMAS ADD MODAL -->
 <div id="xmasAddModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40 p-4">
-  <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border-t-4 border-red-600">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-extrabold text-gray-900">Add partner(s) to Christmas tracker</h3>
+      <h3 class="font-extrabold text-red-900">🎄 Add partner(s) to Christmas tracker</h3>
       <button onclick="closeTrackerAddModal('christmas')" class="text-gray-500 text-xl">×</button>
     </div>
     <div class="space-y-3">
@@ -1557,14 +1487,14 @@
     </div>
     <div class="flex justify-end gap-2 mt-3">
       <button onclick="closeTrackerAddModal('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100">Cancel</button>
-      <button onclick="submitTrackerAddPartner('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add to tracker</button>
+      <button onclick="submitTrackerAddPartner('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-red-700 text-white hover:bg-red-800">Add to tracker</button>
     </div>
 
     <div class="border-t border-gray-200 mt-4 pt-4">
       <label class="block text-xs font-semibold text-gray-700 mb-1">Or add several at once — one per line: <span class="font-normal text-gray-500">Name, City, Store ID</span> (City/Store ID optional)</label>
       <textarea id="xmasAddBulk" rows="4" placeholder="KFC, WAW, 60124&#10;Pizza Hut, KRA" class="w-full px-3 py-2 border rounded-lg text-sm font-mono"></textarea>
       <div class="flex justify-end mt-2">
-        <button onclick="submitTrackerAddBulk('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add all to tracker</button>
+        <button onclick="submitTrackerAddBulk('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-red-700 text-white hover:bg-red-800">Add all to tracker</button>
       </div>
     </div>
   </div>
@@ -2500,29 +2430,35 @@ function updateEditStartDateConstraint() {
           ['+10% Prime', num0(s.prime10)],
           ['+5% Prime', num0(s.prime5)]
         ].map(function(k) {
-          return '<div class="bg-white rounded-xl shadow-sm p-5 border border-purple-100"><div class="text-xs text-purple-700 font-semibold uppercase">' + escapeHtml(k[0]) + '</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + escapeHtml(k[1]) + '</div></div>';
+          const accent = trackerKey === 'christmas' ? 'border-red-200 text-red-700' : 'border-purple-100 text-purple-700';
+          return '<div class="bg-white rounded-xl shadow-sm p-5 border ' + accent + '"><div class="text-xs font-semibold uppercase">' + escapeHtml(k[0]) + '</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + escapeHtml(k[1]) + '</div></div>';
         }).join('');
       }
 
       renderTrackerTable(trackerKey);
 
-      const summaryTable = document.getElementById(cfg.idPrefix + 'SummaryTable');
-      if (summaryTable) {
-        const topCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
-        summaryTable.innerHTML = (s.cities || []).map(function(c) {
-          const rowClass = topCities.indexOf(c.city) !== -1
-            ? 'border-t border-gray-100 bg-yellow-100'
-            : 'border-t border-gray-100';
-          return '<tr class="' + rowClass + '">' +
-            '<td class="px-3 py-2 font-bold">' + escapeHtml(c.city) + '</td>' +
-            '<td class="px-3 py-2 text-right font-bold">' + pct1(c.totalWeight) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(c.highDiscount20Rate) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
-            '<td class="px-3 py-2 text-right">' + pct1(c.prime5Rate) + '</td>' +
-            '</tr>';
-        }).join('');
+      // BTU keeps its original, detailed (tracker-GMV-weighted) city summary.
+      // Christmas's Summary is rendered from real total-Poland GMV instead -
+      // see renderTrackerNationalGmv() below, fired by loadTrackerNationalGmv().
+      if (trackerKey === 'btu') {
+        const summaryTable = document.getElementById(cfg.idPrefix + 'SummaryTable');
+        if (summaryTable) {
+          const topCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
+          summaryTable.innerHTML = (s.cities || []).map(function(c) {
+            const rowClass = topCities.indexOf(c.city) !== -1
+              ? 'border-t border-gray-100 bg-yellow-100'
+              : 'border-t border-gray-100';
+            return '<tr class="' + rowClass + '">' +
+              '<td class="px-3 py-2 font-bold">' + escapeHtml(c.city) + '</td>' +
+              '<td class="px-3 py-2 text-right font-bold">' + pct1(c.totalWeight) + '</td>' +
+              '<td class="px-3 py-2 text-right">' + pct1(c.promoGmvRate) + '</td>' +
+              '<td class="px-3 py-2 text-right">' + pct1(c.highDiscountRate) + '</td>' +
+              '<td class="px-3 py-2 text-right">' + pct1(c.highDiscount20Rate) + '</td>' +
+              '<td class="px-3 py-2 text-right">' + pct1(c.bppRate) + '</td>' +
+              '<td class="px-3 py-2 text-right">' + pct1(c.prime5Rate) + '</td>' +
+              '</tr>';
+          }).join('');
+        }
       }
 
       loadTrackerNationalGmv(trackerKey);
@@ -2558,7 +2494,7 @@ function updateEditStartDateConstraint() {
       const cfg = TRACKER_CONFIG[trackerKey];
       trackerState[trackerKey].dirtyRows[idx] = true;
       const row = document.getElementById(cfg.idPrefix + '-row-' + idx);
-      if (row) row.classList.add('bg-purple-50');
+      if (row) row.classList.add(trackerKey === 'christmas' ? 'bg-amber-50' : 'bg-purple-50');
       updateTrackerSaveAllButton(trackerKey);
     }
 
@@ -2736,11 +2672,31 @@ function updateEditStartDateConstraint() {
     function renderTrackerNationalGmv(trackerKey, res) {
       const cfg = TRACKER_CONFIG[trackerKey];
       const el = document.getElementById(cfg.idPrefix + 'NationalKpi');
+      const festive = trackerKey === 'christmas';
+
       if (!el) return;
       if (!res || !res.generatedAt) {
         el.innerHTML = '<div class="text-xs text-gray-400">National GMV coverage not available yet - run refreshNationalGmv() in Data_Pull.gs.</div>';
+        if (festive) renderChristmasSummaryTable([]);
         return;
       }
+
+      if (festive) {
+        el.innerHTML =
+          '<div class="rounded-2xl p-6 shadow-lg text-white" style="background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 55%, #15803d 100%);">' +
+            '<div class="flex items-center justify-between flex-wrap gap-2">' +
+              '<div>' +
+                '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">🎁 Total Poland GMV in Promo</div>' +
+                '<div class="text-4xl font-extrabold mt-1">' + pct1(res.pctGmvCovered) + '</div>' +
+                '<div class="text-[10px] text-red-100 mt-1">Christmas tracker + matching Master_Log promos, vs. all of Poland. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
+              '</div>' +
+              '<div class="text-5xl">🎄</div>' +
+            '</div>' +
+          '</div>';
+        renderChristmasSummaryTable(res.cities || []);
+        return;
+      }
+
       el.innerHTML =
         '<div class="bg-white rounded-xl shadow-sm p-5 border-2 border-yellow-400">' +
           '<div class="flex items-center justify-between flex-wrap gap-2">' +
@@ -2751,6 +2707,21 @@ function updateEditStartDateConstraint() {
             '</div>' +
           '</div>' +
         '</div>';
+    }
+
+    // Christmas-only Summary: City | Partners | % GMV in Promo, for our 6
+    // priority cities + KTW, weighted against real total-Poland GMV (not
+    // just GMV of partners already sitting in the tracker).
+    function renderChristmasSummaryTable(cities) {
+      const table = document.getElementById('xmasSummaryTable');
+      if (!table) return;
+      table.innerHTML = cities.map(function(c) {
+        return '<tr class="border-t border-red-100">' +
+          '<td class="px-3 py-2 font-bold text-red-900">' + escapeHtml(c.city) + '</td>' +
+          '<td class="px-3 py-2 text-right">' + num0(c.partners) + '</td>' +
+          '<td class="px-3 py-2 text-right font-bold text-red-700">' + pct1(c.pctGmvCovered) + '</td>' +
+          '</tr>';
+      }).join('');
     }
 
 

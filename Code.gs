@@ -3250,20 +3250,28 @@ function getTrackerNationalGmvCoverage(sheetName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gmvSheet = ss.getSheetByName(DATA_PULL_NATIONAL_GMV_SHEET);
   if (!gmvSheet || gmvSheet.getLastRow() < 2) {
-    return { generatedAt: null, pctGmvCovered: 0, coveredGmv: 0, totalGmv: 0 };
+    return { generatedAt: null, pctGmvCovered: 0, coveredGmv: 0, totalGmv: 0, cities: [] };
   }
 
   // National_GMV columns: store_id, store_address_id, city_code, avg_daily_gmv
   var gmvRows = gmvSheet.getRange(2, 1, gmvSheet.getLastRow() - 1, 4).getValues();
 
-  // 1. Covered store_id from the tracker itself (On promo? = Yes).
+  // Cities shown in the per-city breakdown: our 6 priority cities + KTW.
+  var SUMMARY_CITIES = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO', 'KTW'];
+
+  // 1. Covered store_id + tracker partner counts per city (On promo? = Yes
+  //    only counts toward "covered" GMV; the partner count itself is every
+  //    row in the tracker for that city, regardless of status).
   var coveredStoreIds = {};
+  var cityPartnerCounts = {};
   var trackerSheet = ss.getSheetByName(sheetName);
   if (trackerSheet && trackerSheet.getLastRow() >= 2) {
     var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 7).getValues();
     trackerRows.forEach(function(r) {
+      var city = String(r[0] || '').trim().toUpperCase();
       var storeId = String(r[2] || '').trim();
       var onPromo = String(r[6] || '').trim().toLowerCase();
+      if (city) cityPartnerCounts[city] = (cityPartnerCounts[city] || 0) + 1;
       if (storeId && onPromo === 'yes') coveredStoreIds[storeId] = true;
     });
   }
@@ -3301,12 +3309,31 @@ function getTrackerNationalGmvCoverage(sheetName) {
 
   var totalGmv = 0;
   var coveredGmv = 0;
+  var cityTotals = {};
   gmvRows.forEach(function(r) {
     var storeId = String(r[0] || '').trim();
     var addrId = String(r[1] || '').trim();
+    var city = String(r[2] || '').trim().toUpperCase();
     var gmv = toNumber_(r[3]) || 0;
+    var isCovered = !!(coveredStoreIds[storeId] || coveredAddrIds[addrId]);
+
     totalGmv += gmv;
-    if (coveredStoreIds[storeId] || coveredAddrIds[addrId]) coveredGmv += gmv;
+    if (isCovered) coveredGmv += gmv;
+
+    if (!cityTotals[city]) cityTotals[city] = { totalGmv: 0, coveredGmv: 0 };
+    cityTotals[city].totalGmv += gmv;
+    if (isCovered) cityTotals[city].coveredGmv += gmv;
+  });
+
+  var cities = SUMMARY_CITIES.map(function(city) {
+    var ct = cityTotals[city] || { totalGmv: 0, coveredGmv: 0 };
+    return {
+      city: city,
+      partners: cityPartnerCounts[city] || 0,
+      totalGmv: ct.totalGmv,
+      coveredGmv: ct.coveredGmv,
+      pctGmvCovered: ct.totalGmv ? ct.coveredGmv / ct.totalGmv : 0
+    };
   });
 
   var generatedAt = new Date().toISOString();
@@ -3325,7 +3352,8 @@ function getTrackerNationalGmvCoverage(sheetName) {
     generatedAt: generatedAt,
     pctGmvCovered: totalGmv ? coveredGmv / totalGmv : 0,
     coveredGmv: coveredGmv,
-    totalGmv: totalGmv
+    totalGmv: totalGmv,
+    cities: cities
   };
 }
 
