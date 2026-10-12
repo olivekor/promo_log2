@@ -3408,6 +3408,81 @@ function backfillBTUGmvWeightsFromGmvData() {
   return { status: 'SUCCESS', updated: updates };
 }
 
+/**
+ * One-time backfill: fills blank/zero GMV Weight (Christmas!D) from the
+ * REAL BigQuery "National_GMV" sheet instead of the legacy "gmv data"
+ * sheet BTU uses - computed as each store's avg_daily_gmv divided by the
+ * total avg_daily_gmv of all stores in that same city.
+ *
+ * NOTE: unlike BTU, Christmas's Summary card and its "Total Poland GMV in
+ * Promo" KPI do NOT read this column at all - they match tracker rows to
+ * National_GMV directly by Store ID (getTrackerNationalGmvCoverage). This
+ * backfill is only for your own reference/sorting by partner size; the
+ * one field that actually has to be filled in for the Summary numbers to
+ * be correct is Store ID.
+ *
+ * Run manually from the Apps Script editor (backfillChristmasGmvWeights)
+ * after adding new partners/cities, or whenever National_GMV is refreshed.
+ */
+function backfillTrackerGmvWeightsFromNationalGmv(sheetName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var trackerSheet = ss.getSheetByName(sheetName);
+  var gmvSheet = ss.getSheetByName(DATA_PULL_NATIONAL_GMV_SHEET);
+  if (!trackerSheet || !gmvSheet) {
+    Logger.log('backfillTrackerGmvWeightsFromNationalGmv: ' + sheetName + ' or "' + DATA_PULL_NATIONAL_GMV_SHEET + '" sheet not found.');
+    return { status: 'ERROR', reason: sheetName + ' or "' + DATA_PULL_NATIONAL_GMV_SHEET + '" sheet not found.' };
+  }
+
+  var gmvLastRow = gmvSheet.getLastRow();
+  if (gmvLastRow < 2) return { status: 'SKIPPED', reason: '"' + DATA_PULL_NATIONAL_GMV_SHEET + '" is empty - run refreshNationalGmv() first.' };
+
+  // National_GMV columns: store_id, store_address_id, city_code, avg_daily_gmv
+  var gmvRows = gmvSheet.getRange(2, 1, gmvLastRow - 1, 4).getValues();
+  var storeGmv = {};   // store_id -> {city, gmv}
+  var cityTotals = {}; // city -> total gmv
+  gmvRows.forEach(function(row) {
+    var storeId = String(row[0] || '').trim();
+    var city = String(row[2] || '').trim().toUpperCase();
+    var gmv = toNumber_(row[3]) || 0;
+    if (!storeId || !city) return;
+    if (!storeGmv[storeId]) storeGmv[storeId] = { city: city, gmv: 0 };
+    storeGmv[storeId].gmv += gmv;
+    cityTotals[city] = (cityTotals[city] || 0) + gmv;
+  });
+
+  var shareByStoreId = {};
+  Object.keys(storeGmv).forEach(function(storeId) {
+    var s = storeGmv[storeId];
+    var cityTotal = cityTotals[s.city];
+    if (cityTotal) shareByStoreId[storeId] = s.gmv / cityTotal;
+  });
+
+  var trackerLastRow = trackerSheet.getLastRow();
+  if (trackerLastRow < 2) return { status: 'SKIPPED', reason: sheetName + ' is empty.' };
+
+  var trackerRows = trackerSheet.getRange(2, 1, trackerLastRow - 1, 4).getValues(); // A:D
+  var updates = 0;
+
+  trackerRows.forEach(function(row, idx) {
+    var gmvWeight = row[3];
+    if (gmvWeight !== '' && gmvWeight !== null && gmvWeight !== 0) return; // already has a value, leave it
+
+    var storeId = String(row[2] || '').trim(); // C = Store ID
+    var share = shareByStoreId[storeId];
+    if (share === undefined) return; // no match in National_GMV
+
+    trackerSheet.getRange(idx + 2, 4).setValue(share);
+    updates++;
+  });
+
+  Logger.log('backfillTrackerGmvWeightsFromNationalGmv(' + sheetName + '): updated ' + updates + ' row(s).');
+  return { status: 'SUCCESS', updated: updates };
+}
+
+function backfillChristmasGmvWeights() {
+  return backfillTrackerGmvWeightsFromNationalGmv('Christmas');
+}
+
 // Which tracker (sheet name) a submitted promo's Promo Purpose belongs to,
 // if any - e.g. 'Back to University' -> 'BTU', 'Get Ready for Christmas' ->
 // 'Christmas'. Returns null for a Promo Purpose with no matching tracker.

@@ -2534,11 +2534,14 @@ function updateEditStartDateConstraint() {
     // Saves every row touched since the last load/save, in ONE round trip -
     // replaces the old "save per row" flow that made adding/editing several
     // partners painfully slow.
-    function saveTrackerRowsAll(trackerKey) {
+    // onSaved(): optional callback fired after a successful save + reload -
+    // used by goToCreatePromoFromTracker() to wait for the save to actually
+    // land before navigating away.
+    function saveTrackerRowsAll(trackerKey, onSaved) {
       const cfg = TRACKER_CONFIG[trackerKey];
       const st = trackerState[trackerKey];
       const idxs = Object.keys(st.dirtyRows).map(Number);
-      if (!idxs.length) return;
+      if (!idxs.length) { if (onSaved) onSaved(); return; }
       const payloads = idxs.map(function(idx) { return readTrackerRowFromDom_(trackerKey, idx); }).filter(Boolean);
 
       const btn = document.getElementById(cfg.idPrefix + 'SaveAllBtn');
@@ -2551,6 +2554,7 @@ function updateEditStartDateConstraint() {
             console.error('Tracker save errors', res.results);
           }
           loadTracker(trackerKey);
+          if (onSaved) onSaved();
         })
         .withFailureHandler(function(err) {
           if (btn) { btn.disabled = false; btn.innerText = 'Save All'; }
@@ -2628,13 +2632,38 @@ function updateEditStartDateConstraint() {
     // Jump to Create Promo (tab1) with Partner/Promo Purpose pre-filled from
     // a tracker row, so the AM doesn't have to type the partner name twice.
     function goToCreatePromoFromTracker(trackerKey, idx) {
-      const cfg = TRACKER_CONFIG[trackerKey];
-      const r = trackerState[trackerKey].filteredRows[idx];
+      const st = trackerState[trackerKey];
+      const r = st.filteredRows[idx];
       if (!r) return;
+      const storeName = r.storeName;
+
+      const dirtyCount = Object.keys(st.dirtyRows).length;
+      if (dirtyCount > 0) {
+        const wantsSave = confirm(
+          'You have ' + dirtyCount + ' unsaved row(s) in this tracker.\n\n' +
+          'OK = Save All, then open Create Promo\n' +
+          'Cancel = open Create Promo without saving (your edits stay unsaved in the tracker)'
+        );
+        if (wantsSave) {
+          // Save first, then navigate once the reload confirms it landed -
+          // look the partner up by name (not index), since reloading the
+          // tracker can reshuffle filteredRows.
+          saveTrackerRowsAll(trackerKey, function() {
+            navigateToCreatePromoForPartner_(trackerKey, storeName);
+          });
+          return;
+        }
+      }
+
+      navigateToCreatePromoForPartner_(trackerKey, storeName);
+    }
+
+    function navigateToCreatePromoForPartner_(trackerKey, storeName) {
+      const cfg = TRACKER_CONFIG[trackerKey];
       switchTab('tab1');
       const partnerInput = document.getElementById('partnerInput');
       if (partnerInput) {
-        partnerInput.value = r.storeName;
+        partnerInput.value = storeName;
         loadProductsAndAddresses();
       }
       const purposeSelect = document.getElementById('promoPurpose');
