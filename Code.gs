@@ -724,12 +724,16 @@ function submitPromotionToMasterLog(promoData) {
   var calc = calculateMasterLog_(promoData);
   writeCalculatedColumns_(sheet, nextRow, calc);
 
-  // Back to University promotions are also tracked in the temporary BTU tracker.
-  if (String(promoData.promoPurpose || '').trim().toLowerCase() === 'back to university') {
+  // Promos whose Promo Purpose matches a seasonal tracker (BTU, Christmas, ...)
+  // are also upserted into that tracker: On promo? -> Yes, Linked Promo ID set,
+  // and a brand-new row appended (Source: "Added from Card 1") if the partner
+  // wasn't already sitting in the tracker.
+  var matchingTrackerSheet = trackerSheetForPromoPurpose_(promoData.promoPurpose);
+  if (matchingTrackerSheet) {
     try {
-      upsertBTUPartnerFromPromo_(promoData, id, nextRow);
+      upsertTrackerPartnerFromPromo_(matchingTrackerSheet, promoData, id, nextRow);
     } catch (e) {
-      Logger.log('BTU tracker update failed: ' + e.message);
+      Logger.log(matchingTrackerSheet + ' tracker update failed: ' + e.message);
     }
   }
 
@@ -3376,16 +3380,28 @@ function backfillBTUGmvWeightsFromGmvData() {
   return { status: 'SUCCESS', updated: updates };
 }
 
-function upsertBTUPartnerFromPromo_(promoData, promoId, masterRowIndex) {
+// Which tracker (sheet name) a submitted promo's Promo Purpose belongs to,
+// if any - e.g. 'Back to University' -> 'BTU', 'Get Ready for Christmas' ->
+// 'Christmas'. Returns null for a Promo Purpose with no matching tracker.
+function trackerSheetForPromoPurpose_(promoPurpose) {
+  var purpose = String(promoPurpose || '').trim().toLowerCase();
+  if (!purpose) return null;
+  var match = Object.keys(TRACKER_DEFINITIONS).filter(function(sheetName) {
+    return TRACKER_DEFINITIONS[sheetName].promoPurpose === purpose;
+  });
+  return match.length ? match[0] : null;
+}
+
+function upsertTrackerPartnerFromPromo_(sheetName, promoData, promoId, masterRowIndex) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('BTU');
-  if (!sheet) sheet = ss.insertSheet('BTU');
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
   ensureBTUHeader_(sheet);
 
   var name = String(promoData.partnerName || '').trim();
   if (!name) return;
 
-  var rows = getBTUTracker().rows;
+  var rows = getTracker_(sheetName).rows;
   var key = normalizeBTUName_(name);
   var existing = rows.find(function(r) { return normalizeBTUName_(r.storeName) === key; });
 
@@ -3412,7 +3428,8 @@ function upsertBTUPartnerFromPromo_(promoData, promoId, masterRowIndex) {
     '',
     promoId || '',
     new Date(),
-    'Added from Card 1'
+    'Added from Card 1',
+    ''
   ]);
 }
 
