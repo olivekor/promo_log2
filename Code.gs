@@ -3250,7 +3250,7 @@ function getTrackerNationalGmvCoverage(sheetName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var gmvSheet = ss.getSheetByName(DATA_PULL_NATIONAL_GMV_SHEET);
   if (!gmvSheet || gmvSheet.getLastRow() < 2) {
-    return { generatedAt: null, pctGmvCovered: 0, coveredGmv: 0, totalGmv: 0, cities: [] };
+    return { generatedAt: null, pctGmvCovered: 0, coveredGmv: 0, totalGmv: 0, pctGmvCoveredTop6: 0, cities: [] };
   }
 
   // National_GMV columns: store_id, store_address_id, city_code, avg_daily_gmv
@@ -3336,6 +3336,20 @@ function getTrackerNationalGmvCoverage(sheetName) {
     };
   });
 
+  // Blended across just our 6 priority cities (KTW excluded) - the first 6
+  // entries of SUMMARY_CITIES - so the UI can show this next to the
+  // total-Poland number for context (that one is always lower, diluted by
+  // every smaller city where the tracker barely has any coverage).
+  var TOP6_CITIES = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
+  var top6TotalGmv = 0;
+  var top6CoveredGmv = 0;
+  TOP6_CITIES.forEach(function(city) {
+    var ct = cityTotals[city] || { totalGmv: 0, coveredGmv: 0 };
+    top6TotalGmv += ct.totalGmv;
+    top6CoveredGmv += ct.coveredGmv;
+  });
+  var pctGmvCoveredTop6 = top6TotalGmv ? top6CoveredGmv / top6TotalGmv : 0;
+
   var generatedAt = new Date().toISOString();
   var statusSheet = ss.getSheetByName(DATA_PULL_STATUS_SHEET);
   if (statusSheet && statusSheet.getLastRow() >= 2) {
@@ -3353,6 +3367,7 @@ function getTrackerNationalGmvCoverage(sheetName) {
     pctGmvCovered: totalGmv ? coveredGmv / totalGmv : 0,
     coveredGmv: coveredGmv,
     totalGmv: totalGmv,
+    pctGmvCoveredTop6: pctGmvCoveredTop6,
     cities: cities
   };
 }

@@ -2713,14 +2713,18 @@ function updateEditStartDateConstraint() {
       if (festive) {
         el.innerHTML =
           '<div class="rounded-2xl p-6 shadow-lg text-white" style="background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 55%, #15803d 100%);">' +
-            '<div class="flex items-center justify-between flex-wrap gap-2">' +
+            '<div class="flex items-center justify-between flex-wrap gap-6">' +
               '<div>' +
                 '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">🎁 Total Poland GMV in Promo</div>' +
                 '<div class="text-4xl font-extrabold mt-1">' + pct1(res.pctGmvCovered) + '</div>' +
-                '<div class="text-[10px] text-red-100 mt-1">Christmas tracker + matching Master_Log promos, vs. all of Poland. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
               '</div>' +
-              '<div class="text-5xl">🎄</div>' +
+              '<div class="border-l border-white/30 pl-6">' +
+                '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">Top 6 Cities</div>' +
+                '<div class="text-4xl font-extrabold mt-1">' + pct1(res.pctGmvCoveredTop6) + '</div>' +
+              '</div>' +
+              '<div class="text-5xl ml-auto">🎄</div>' +
             '</div>' +
+            '<div class="text-[10px] text-red-100 mt-3">Christmas tracker + matching Master_Log promos. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
           '</div>';
         renderChristmasSummaryTable(res.cities || []);
         return;
@@ -2728,13 +2732,17 @@ function updateEditStartDateConstraint() {
 
       el.innerHTML =
         '<div class="bg-white rounded-xl shadow-sm p-5 border-2 border-yellow-400">' +
-          '<div class="flex items-center justify-between flex-wrap gap-2">' +
+          '<div class="flex items-center flex-wrap gap-6">' +
             '<div>' +
               '<div class="text-xs text-gray-500 font-semibold uppercase">Total Poland GMV in Promo</div>' +
               '<div class="text-3xl font-extrabold text-gray-900 mt-1">' + pct1(res.pctGmvCovered) + '</div>' +
-              '<div class="text-[10px] text-gray-400 mt-1">' + cfg.sheetName + ' tracker + matching Master_Log promos, vs. all of Poland. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
+            '</div>' +
+            '<div class="border-l border-gray-200 pl-6">' +
+              '<div class="text-xs text-gray-500 font-semibold uppercase">Top 6 Cities</div>' +
+              '<div class="text-3xl font-extrabold text-gray-900 mt-1">' + pct1(res.pctGmvCoveredTop6) + '</div>' +
             '</div>' +
           '</div>' +
+          '<div class="text-[10px] text-gray-400 mt-3">' + cfg.sheetName + ' tracker + matching Master_Log promos. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
         '</div>';
     }
 
