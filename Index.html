@@ -175,6 +175,15 @@
     7. Promo Forecast
   </button>
 
+  <button
+    type="button"
+    onclick="switchTab('tab8')"
+    id="nav-tab8"
+    class="px-5 py-2.5 text-purple-700 hover:text-purple-900 font-bold bg-purple-50/60 rounded-t-lg"
+  >
+    8. Christmas
+  </button>
+
 </div>
 
 
@@ -264,6 +273,7 @@
           <option value="Always on">Always on</option>
           <option value="Key Event">Key Event</option>
           <option value="Back to University">Back to University</option>
+          <option value="Christmas">Christmas</option>
           <option value="Prime Days">Prime Days</option>
           <option value="December BCs campaign">December BCs campaign</option>
           <option value="Others">Others</option>
@@ -909,6 +919,7 @@
             <option value="Key Event">Key Event</option>
             <option value="Always on">Always on</option>
             <option value="Back to University">Back to University</option>
+            <option value="Christmas">Christmas</option>
             <option value="Prime Days">Prime Days</option>
             <option value="December BCs campaign">December BCs campaign</option>
             <option value="Others">Others</option>
@@ -1204,10 +1215,13 @@
       <p class="text-xs text-purple-700 mt-1">Temporary tracker • initial partner list + additional partners added by the team</p>
     </div>
     <div class="flex gap-2">
-      <button onclick="openBTUAddModal()" class="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-bold hover:bg-purple-800">+ Add Partner</button>
-      <button onclick="loadBTUTracker()" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90">Refresh</button>
+      <button id="btuSaveAllBtn" onclick="saveTrackerRowsAll('btu')" disabled class="px-4 py-2 bg-purple-900 text-white rounded-lg text-xs font-bold opacity-40 cursor-not-allowed">Save All</button>
+      <button onclick="openTrackerAddModal('btu')" class="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-bold hover:bg-purple-800">+ Add Partner</button>
+      <button onclick="loadTracker('btu')" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90">Refresh</button>
     </div>
   </div>
+
+  <div id="btuNationalKpi"></div>
 
   <div id="btuKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
 
@@ -1215,9 +1229,9 @@
     <div class="glovo-card lg:col-span-2 overflow-x-auto">
       <div class="p-5 border-b border-purple-100">
         <h3 class="font-extrabold text-gray-900">Partner tracker</h3>
-        <p class="text-xs text-gray-500 mt-1">Edit the tracker directly and save individual rows.</p>
+        <p class="text-xs text-gray-500 mt-1">Edit cells freely, then click "Save All" once — no per-row save needed.</p>
         <div class="mt-3">
-          <input id="btuSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterBTUTracker()" class="w-full px-3 py-2 border rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-300">
+          <input id="btuSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterTracker('btu')" class="w-full px-3 py-2 border rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-300">
         </div>
       </div>
       <div class="overflow-x-auto">
@@ -1310,9 +1324,10 @@
   </div>
 
   <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
-    <span class="font-bold text-gray-500">Important:</span>
-    % GMV is <span class="font-semibold">not the city's total Glovo GMV</span>
-    and does not represent a share of total Poland GMV.
+    <span class="font-bold text-gray-500">Note:</span>
+    the table above is <span class="font-semibold">city-scoped</span> (share of
+    that city's GMV). The total-Poland GMV figure is shown separately above,
+    at the top of this tab.
   </div>
 
 </div>
@@ -1327,8 +1342,8 @@
 <div id="btuAddModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40 p-4">
   <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-extrabold text-gray-900">Add partner to BTU tracker</h3>
-      <button onclick="closeBTUAddModal()" class="text-gray-500 text-xl">×</button>
+      <h3 class="font-extrabold text-gray-900">Add partner(s) to BTU tracker</h3>
+      <button onclick="closeTrackerAddModal('btu')" class="text-gray-500 text-xl">×</button>
     </div>
     <div class="space-y-3">
       <div>
@@ -1340,14 +1355,188 @@
         <div><label class="block text-xs font-semibold text-gray-700 mb-1">Store ID</label><input id="btuAddStoreId" placeholder="60883" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
       </div>
     </div>
-    <div class="flex justify-end gap-2 mt-5">
-      <button onclick="closeBTUAddModal()" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100">Cancel</button>
-      <button onclick="submitBTUAddPartner()" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add to tracker</button>
+    <div class="flex justify-end gap-2 mt-3">
+      <button onclick="closeTrackerAddModal('btu')" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100">Cancel</button>
+      <button onclick="submitTrackerAddPartner('btu')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add to tracker</button>
+    </div>
+
+    <div class="border-t border-gray-200 mt-4 pt-4">
+      <label class="block text-xs font-semibold text-gray-700 mb-1">Or add several at once — one per line: <span class="font-normal text-gray-500">Name, City, Store ID</span> (City/Store ID optional)</label>
+      <textarea id="btuAddBulk" rows="4" placeholder="KFC, WAW, 60124&#10;Pizza Hut, KRA" class="w-full px-3 py-2 border rounded-lg text-sm font-mono"></textarea>
+      <div class="flex justify-end mt-2">
+        <button onclick="submitTrackerAddBulk('btu')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add all to tracker</button>
+      </div>
     </div>
   </div>
 </div>
 
   </div>
+
+<!-- ========================================================= -->
+<!-- TAB 8 - CHRISTMAS -->
+<!-- ========================================================= -->
+
+<div id="tab8" class="p-6 hidden bg-purple-50 space-y-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-extrabold text-purple-900">🎄 Christmas Tracker</h2>
+      <p class="text-xs text-purple-700 mt-1">Get Ready for Christmas • initial partner list + additional partners added by the team</p>
+    </div>
+    <div class="flex gap-2">
+      <button id="xmasSaveAllBtn" onclick="saveTrackerRowsAll('christmas')" disabled class="px-4 py-2 bg-purple-900 text-white rounded-lg text-xs font-bold opacity-40 cursor-not-allowed">Save All</button>
+      <button onclick="openTrackerAddModal('christmas')" class="px-4 py-2 bg-purple-700 text-white rounded-lg text-xs font-bold hover:bg-purple-800">+ Add Partner</button>
+      <button onclick="loadTracker('christmas')" class="px-4 py-2 bg-black text-white rounded-lg text-xs font-bold hover:opacity-90">Refresh</button>
+    </div>
+  </div>
+
+  <div id="xmasNationalKpi"></div>
+
+  <div id="xmasKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="glovo-card lg:col-span-2 overflow-x-auto">
+      <div class="p-5 border-b border-purple-100">
+        <h3 class="font-extrabold text-gray-900">Partner tracker</h3>
+        <p class="text-xs text-gray-500 mt-1">Edit cells freely, then click "Save All" once — no per-row save needed.</p>
+        <div class="mt-3">
+          <input id="xmasSearchInput" type="text" placeholder="Search partner, AM, manager or city..." oninput="filterTracker('christmas')" class="w-full px-3 py-2 border rounded-lg text-xs bg-white outline-none focus:ring-2 focus:ring-purple-300">
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-purple-50 text-gray-600 uppercase">
+            <tr>
+              <th class="px-3 py-3 text-left">City</th>
+              <th class="px-3 py-3 text-left">Partner</th>
+              <th class="px-3 py-3 text-left">Store ID</th>
+              <th class="px-3 py-3 text-left">AM</th>
+              <th class="px-3 py-3 text-left">Team</th>
+              <th class="px-3 py-3 text-left">Manager</th>
+              <th class="px-3 py-3 text-center">On promo?</th>
+              <th class="px-3 py-3 text-center">≥30% / 2X1?</th>
+              <th class="px-3 py-3 text-center">+10% Prime?</th>
+              <th class="px-3 py-3 text-center">+5% Prime?</th>
+              <th class="px-3 py-3"></th>
+            </tr>
+          </thead>
+          <tbody id="xmasTable"></tbody>
+        </table>
+      </div>
+      <div id="xmasCount" class="px-5 py-3 text-[10px] text-gray-500 border-t border-gray-100"></div>
+    </div>
+
+    <div class="glovo-card overflow-hidden">
+      <div class="p-5 border-b border-purple-100">
+        <h3 class="font-extrabold text-gray-900">Summary</h3>
+        <p class="text-xs text-gray-500 mt-1">Current Christmas tracker status by city</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="bg-gray-50 text-gray-500 uppercase">
+            <tr>
+              <th class="px-3 py-3 text-left">City</th>
+              <th class="px-3 py-3 text-right">% GMV</th>
+              <th class="px-3 py-3 text-right">% GMV in Promo</th>
+              <th class="px-3 py-3 text-right">% GMV ≥30%</th>
+              <th class="px-3 py-3 text-right">% GMV Prime</th>
+              <th class="px-3 py-3 text-right">% GMV +5% Prime</th>
+            </tr>
+          </thead>
+          <tbody id="xmasSummaryTable"></tbody>
+        </table>
+      </div>
+      <div class="p-4 border-t border-gray-100 bg-gray-50">
+
+  <div class="flex gap-2 items-start">
+
+<div class="text-sm mt-0.5">💡</div>
+
+<div class="text-[10px] leading-relaxed text-gray-500">
+
+  <div class="font-extrabold text-gray-700 mb-1">
+    How to read the GMV metrics
+  </div>
+
+  <div class="mb-2">
+    These metrics are <span class="font-bold text-gray-700">GMV-weighted</span>,
+    not partner-count based.
+  </div>
+
+  <div class="space-y-0.5">
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV</span>
+      → total GMV Weight represented by Christmas partners in this city.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV in Promo</span>
+      → share of this city's Christmas GMV Weight currently covered by a promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV ≥30%</span>
+      → share of this city's Christmas GMV Weight covered by a ≥30% OFF or 2X1 promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV Prime</span>
+      → share of this city's Christmas GMV Weight covered by a ≥10% OFF Prime promo.
+    </div>
+
+    <div>
+      <span class="font-bold text-gray-700">% GMV +5% Prime</span>
+      → share of this city's Christmas GMV Weight covered by a ≥5% OFF Prime promo.
+    </div>
+
+  </div>
+
+  <div class="mt-2 pt-2 border-t border-gray-200 text-gray-400">
+    <span class="font-bold text-gray-500">Note:</span>
+    the table above is <span class="font-semibold">city-scoped</span> (share of
+    that city's GMV). The total-Poland GMV figure is shown separately above,
+    at the top of this tab.
+  </div>
+
+</div>
+
+  </div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- CHRISTMAS ADD MODAL -->
+<div id="xmasAddModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40 p-4">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-extrabold text-gray-900">Add partner(s) to Christmas tracker</h3>
+      <button onclick="closeTrackerAddModal('christmas')" class="text-gray-500 text-xl">×</button>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Partner</label>
+        <input id="xmasAddPartner" list="partnersDatalist" placeholder="Search partner..." class="w-full px-3 py-2 border rounded-lg text-sm">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-semibold text-gray-700 mb-1">City</label><input id="xmasAddCity" placeholder="WAW" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+        <div><label class="block text-xs font-semibold text-gray-700 mb-1">Store ID</label><input id="xmasAddStoreId" placeholder="60883" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2 mt-3">
+      <button onclick="closeTrackerAddModal('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100">Cancel</button>
+      <button onclick="submitTrackerAddPartner('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add to tracker</button>
+    </div>
+
+    <div class="border-t border-gray-200 mt-4 pt-4">
+      <label class="block text-xs font-semibold text-gray-700 mb-1">Or add several at once — one per line: <span class="font-normal text-gray-500">Name, City, Store ID</span> (City/Store ID optional)</label>
+      <textarea id="xmasAddBulk" rows="4" placeholder="KFC, WAW, 60124&#10;Pizza Hut, KRA" class="w-full px-3 py-2 border rounded-lg text-sm font-mono"></textarea>
+      <div class="flex justify-end mt-2">
+        <button onclick="submitTrackerAddBulk('christmas')" class="px-4 py-2 rounded-lg text-xs font-bold bg-purple-700 text-white">Add all to tracker</button>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- ========================================================= -->
 
@@ -1488,6 +1677,7 @@
         <option value="Always on">Always on</option>
         <option value="Key Event">Key Event</option>
         <option value="Back to University">Back to University</option>
+        <option value="Christmas">Christmas</option>
         <option value="Prime Days">Prime Days</option>
         <option value="December BCs campaign">December BCs campaign</option>
         <option value="Others">Others</option>
@@ -1762,8 +1952,10 @@
     let editSelectedProductNames = [];
 
     // BTU Tracker state
-    let allBTURows = [];
-    let filteredBTURows = [];
+    let trackerState = {
+      btu: { allRows: [], filteredRows: [], dirtyRows: {} },
+      christmas: { allRows: [], filteredRows: [], dirtyRows: {} }
+    };
 
 
     /* ========================================================= */
@@ -2013,7 +2205,8 @@ function updateEditStartDateConstraint() {
         'tab4',
         'tab5',
         'tab6',
-        'tab7'
+        'tab7',
+        'tab8'
       ];
 
 
@@ -2050,7 +2243,11 @@ function updateEditStartDateConstraint() {
       }
 
       if (tabId === 'tab6') {
-        loadBTUTracker();
+        loadTracker('btu');
+      }
+
+      if (tabId === 'tab8') {
+        loadTracker('christmas');
       }
 
     }
@@ -2206,51 +2403,65 @@ function updateEditStartDateConstraint() {
 
 
     /* ========================================================= */
-    /* BACK TO UNIVERSITY TRACKER (TAB 6) */
+    /* SEASONAL TRACKERS (BTU - tab 6, Christmas - tab 8) */
+    /* Both tabs share this one module, keyed by trackerKey       */
+    /* ('btu' / 'christmas'); see TRACKER_CONFIG below.           */
     /* ========================================================= */
 
-    function yesNoSelect(value, field, idx) {
+    const TRACKER_CONFIG = {
+      btu: { sheetName: 'BTU', idPrefix: 'btu', getFn: 'getBTUTracker', purposeValue: 'Back to University' },
+      christmas: { sheetName: 'Christmas', idPrefix: 'xmas', getFn: 'getChristmasTracker', purposeValue: 'Christmas' }
+    };
+
+    function yesNoSelect(trackerKey, value, field, idx) {
+      const cfg = TRACKER_CONFIG[trackerKey];
       const v = String(value || '');
-      return '<select onchange="markBTURowDirty(' + idx + ')" id="btu-' + field + '-' + idx + '" class="px-2 py-1 border rounded bg-white text-xs">' +
+      return '<select onchange="markTrackerRowDirty(\'' + trackerKey + '\',' + idx + ')" id="' + cfg.idPrefix + '-' + field + '-' + idx + '" class="px-2 py-1 border rounded bg-white text-xs">' +
         '<option value="" ' + (v === '' ? 'selected' : '') + '></option>' +
         '<option value="Yes" ' + (v.toLowerCase() === 'yes' ? 'selected' : '') + '>Yes</option>' +
         '<option value="No" ' + (v.toLowerCase() === 'no' ? 'selected' : '') + '>No</option>' +
         '</select>';
     }
 
-    function loadBTUTracker() {
-      console.log('BTU: calling getBTUTracker...');
+    function loadTracker(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      console.log(trackerKey + ': calling ' + cfg.getFn + '...');
 
       google.script.run
         .withSuccessHandler(function(data) {
-          console.log('BTU: response received', data);
-          allBTURows = (data && data.rows) || [];
-          filteredBTURows = allBTURows.slice();
-          renderBTUTracker(data || {});
+          console.log(trackerKey + ': response received', data);
+          const st = trackerState[trackerKey];
+          st.allRows = (data && data.rows) || [];
+          st.filteredRows = st.allRows.slice();
+          st.dirtyRows = {};
+          renderTracker(trackerKey, data || {});
         })
         .withFailureHandler(function(error) {
-          console.error('BTU: BACKEND ERROR', error);
+          console.error(trackerKey + ': BACKEND ERROR', error);
           handleError(error);
         })
-        .getBTUTracker();
+        [cfg.getFn]();
     }
 
-    function filterBTUTracker() {
-      const q = String(document.getElementById('btuSearchInput').value || '').trim().toLowerCase();
-      filteredBTURows = !q ? allBTURows.slice() : allBTURows.filter(function(r) {
+    function filterTracker(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const st = trackerState[trackerKey];
+      const q = String(document.getElementById(cfg.idPrefix + 'SearchInput').value || '').trim().toLowerCase();
+      st.filteredRows = !q ? st.allRows.slice() : st.allRows.filter(function(r) {
         return [r.storeName, r.accountManager, r.manager, r.city, r.storeId, r.team].some(function(v) {
           return String(v || '').toLowerCase().indexOf(q) !== -1;
         });
       });
-      renderBTUTable();
+      renderTrackerTable(trackerKey);
     }
 
-    function renderBTUTracker(data) {
+    function renderTracker(trackerKey, data) {
+      const cfg = TRACKER_CONFIG[trackerKey];
       const s = data.summary || {};
-      const kpis = document.getElementById('btuKpis');
+      const kpis = document.getElementById(cfg.idPrefix + 'Kpis');
       if (kpis) {
         kpis.innerHTML = [
-          ['BTU partners', num0(s.total)],
+          [cfg.sheetName + ' partners', num0(s.total)],
           ['On promo', num0(s.onPromo)],
           ['≥30% / 2X1', num0(s.highDiscount)],
           ['+10% Prime', num0(s.prime10)],
@@ -2260,13 +2471,13 @@ function updateEditStartDateConstraint() {
         }).join('');
       }
 
-      renderBTUTable();
+      renderTrackerTable(trackerKey);
 
-      const summaryTable = document.getElementById('btuSummaryTable');
+      const summaryTable = document.getElementById(cfg.idPrefix + 'SummaryTable');
       if (summaryTable) {
-        const btuTopCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
+        const topCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
         summaryTable.innerHTML = (s.cities || []).map(function(c) {
-          const rowClass = btuTopCities.indexOf(c.city) !== -1
+          const rowClass = topCities.indexOf(c.city) !== -1
             ? 'border-t border-gray-100 bg-yellow-100'
             : 'border-t border-gray-100';
           return '<tr class="' + rowClass + '">' +
@@ -2279,94 +2490,231 @@ function updateEditStartDateConstraint() {
             '</tr>';
         }).join('');
       }
+
+      loadTrackerNationalGmv(trackerKey);
     }
 
-    function renderBTUTable() {
-      const tbody = document.getElementById('btuTable');
+    function renderTrackerTable(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const st = trackerState[trackerKey];
+      const tbody = document.getElementById(cfg.idPrefix + 'Table');
       if (!tbody) return;
-      tbody.innerHTML = filteredBTURows.map(function(r, idx) {
-        return '<tr class="border-t border-gray-100" id="btu-row-' + idx + '">' +
-          '<td class="px-3 py-2"><input id="btu-city-' + idx + '" value="' + escapeHtml(r.city) + '" class="w-16 px-2 py-1 border rounded text-xs"></td>' +
+      tbody.innerHTML = st.filteredRows.map(function(r, idx) {
+        return '<tr class="border-t border-gray-100" id="' + cfg.idPrefix + '-row-' + idx + '">' +
+          '<td class="px-3 py-2"><input id="' + cfg.idPrefix + '-city-' + idx + '" value="' + escapeHtml(r.city) + '" oninput="markTrackerRowDirty(\'' + trackerKey + '\',' + idx + ')" class="w-16 px-2 py-1 border rounded text-xs"></td>' +
           '<td class="px-3 py-2 font-semibold whitespace-nowrap">' + escapeHtml(r.storeName) + '</td>' +
-          '<td class="px-3 py-2"><input id="btu-storeid-' + idx + '" value="' + escapeHtml(r.storeId) + '" class="w-20 px-2 py-1 border rounded text-xs"></td>' +
-          '<td class="px-3 py-2 whitespace-nowrap"><input id="btu-am-' + idx + '" value="' + escapeHtml(r.accountManager) + '" class="w-64 px-2 py-1 border rounded text-xs" placeholder="AM email"></td>' +
+          '<td class="px-3 py-2"><input id="' + cfg.idPrefix + '-storeid-' + idx + '" value="' + escapeHtml(r.storeId) + '" oninput="markTrackerRowDirty(\'' + trackerKey + '\',' + idx + ')" class="w-20 px-2 py-1 border rounded text-xs"></td>' +
+          '<td class="px-3 py-2 whitespace-nowrap"><input id="' + cfg.idPrefix + '-am-' + idx + '" value="' + escapeHtml(r.accountManager) + '" oninput="markTrackerRowDirty(\'' + trackerKey + '\',' + idx + ')" class="w-64 px-2 py-1 border rounded text-xs" placeholder="AM email"></td>' +
           '<td class="px-3 py-2">' + escapeHtml(r.team) + '</td>' +
           '<td class="px-3 py-2 whitespace-nowrap">' + escapeHtml(r.manager || '') + '</td>' +
-          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.onPromo, 'promo', idx) + '</td>' +
-          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.highDiscount, 'high', idx) + '</td>' +
-          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.prime10, 'prime', idx) + '</td>' +
-          '<td class="px-3 py-2 text-center">' + yesNoSelect(r.prime5, 'prime5', idx) + '</td>' +
-          '<td class="px-3 py-2 text-right"><button onclick="saveBTURow(' + idx + ')" class="px-2 py-1 rounded bg-purple-700 text-white text-[10px] font-bold">Save</button></td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.onPromo, 'promo', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.highDiscount, 'high', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.prime10, 'prime', idx) + '</td>' +
+          '<td class="px-3 py-2 text-center">' + yesNoSelect(trackerKey, r.prime5, 'prime5', idx) + '</td>' +
+          '<td class="px-3 py-2 text-right"><button onclick="goToCreatePromoFromTracker(\'' + trackerKey + '\',' + idx + ')" class="px-2 py-1 rounded bg-yellow-500 text-black text-[10px] font-bold whitespace-nowrap">Create Promo</button></td>' +
           '</tr>';
       }).join('');
 
-      const countEl = document.getElementById('btuCount');
-      if (countEl) countEl.innerText = filteredBTURows.length + ' of ' + allBTURows.length + ' partners';
+      const countEl = document.getElementById(cfg.idPrefix + 'Count');
+      if (countEl) countEl.innerText = st.filteredRows.length + ' of ' + st.allRows.length + ' partners';
     }
 
-    function markBTURowDirty(idx) {
-      const row = document.getElementById('btu-row-' + idx);
+    function markTrackerRowDirty(trackerKey, idx) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      trackerState[trackerKey].dirtyRows[idx] = true;
+      const row = document.getElementById(cfg.idPrefix + '-row-' + idx);
       if (row) row.classList.add('bg-purple-50');
+      updateTrackerSaveAllButton(trackerKey);
     }
 
-    function saveBTURow(idx) {
-      const r = filteredBTURows[idx];
-      if (!r) return;
-      const payload = {
+    function updateTrackerSaveAllButton(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const btn = document.getElementById(cfg.idPrefix + 'SaveAllBtn');
+      if (!btn) return;
+      const n = Object.keys(trackerState[trackerKey].dirtyRows).length;
+      btn.innerText = n ? ('Save All (' + n + ')') : 'Save All';
+      btn.disabled = !n;
+      btn.classList.toggle('opacity-40', !n);
+      btn.classList.toggle('cursor-not-allowed', !n);
+    }
+
+    function readTrackerRowFromDom_(trackerKey, idx) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const r = trackerState[trackerKey].filteredRows[idx];
+      if (!r) return null;
+      return {
         rowIndex: r.rowIndex,
-        city: document.getElementById('btu-city-' + idx).value,
+        city: document.getElementById(cfg.idPrefix + '-city-' + idx).value,
         storeName: r.storeName,
-        storeId: document.getElementById('btu-storeid-' + idx).value,
+        storeId: document.getElementById(cfg.idPrefix + '-storeid-' + idx).value,
         gmvWeight: r.gmvWeight,
-        accountManager: document.getElementById('btu-am-' + idx).value.trim(),
+        accountManager: document.getElementById(cfg.idPrefix + '-am-' + idx).value.trim(),
         team: r.team,
-        onPromo: document.getElementById('btu-promo-' + idx).value,
-        highDiscount: document.getElementById('btu-high-' + idx).value,
-        prime10: document.getElementById('btu-prime-' + idx).value,
-        prime5: document.getElementById('btu-prime5-' + idx).value,
+        onPromo: document.getElementById(cfg.idPrefix + '-promo-' + idx).value,
+        highDiscount: document.getElementById(cfg.idPrefix + '-high-' + idx).value,
+        prime10: document.getElementById(cfg.idPrefix + '-prime-' + idx).value,
+        prime5: document.getElementById(cfg.idPrefix + '-prime5-' + idx).value,
         linkedPromoId: r.linkedPromoId,
         source: r.source
       };
-      google.script.run
-        .withSuccessHandler(function() { loadBTUTracker(); })
-        .withFailureHandler(handleError)
-        .saveBTUTrackerRow(payload);
     }
 
-    function openBTUAddModal() {
-      const m = document.getElementById('btuAddModal');
+    // Saves every row touched since the last load/save, in ONE round trip -
+    // replaces the old "save per row" flow that made adding/editing several
+    // partners painfully slow.
+    function saveTrackerRowsAll(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const st = trackerState[trackerKey];
+      const idxs = Object.keys(st.dirtyRows).map(Number);
+      if (!idxs.length) return;
+      const payloads = idxs.map(function(idx) { return readTrackerRowFromDom_(trackerKey, idx); }).filter(Boolean);
+
+      const btn = document.getElementById(cfg.idPrefix + 'SaveAllBtn');
+      if (btn) { btn.disabled = true; btn.innerText = 'Saving...'; }
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.failedCount) {
+            alert(res.failedCount + ' row(s) failed to save - check the console for details.');
+            console.error('Tracker save errors', res.results);
+          }
+          loadTracker(trackerKey);
+        })
+        .withFailureHandler(function(err) {
+          if (btn) { btn.disabled = false; btn.innerText = 'Save All'; }
+          handleError(err);
+        })
+        .saveTrackerRowsBulk(cfg.sheetName, payloads);
+    }
+
+    function openTrackerAddModal(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const m = document.getElementById(cfg.idPrefix + 'AddModal');
       if (m) {
         m.classList.remove('hidden');
         m.classList.add('flex');
-        document.getElementById('btuAddPartner').value = '';
-        document.getElementById('btuAddCity').value = '';
-        document.getElementById('btuAddStoreId').value = '';
+        document.getElementById(cfg.idPrefix + 'AddPartner').value = '';
+        document.getElementById(cfg.idPrefix + 'AddCity').value = '';
+        document.getElementById(cfg.idPrefix + 'AddStoreId').value = '';
+        const bulk = document.getElementById(cfg.idPrefix + 'AddBulk');
+        if (bulk) bulk.value = '';
       }
     }
 
-    function closeBTUAddModal() {
-      const m = document.getElementById('btuAddModal');
+    function closeTrackerAddModal(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const m = document.getElementById(cfg.idPrefix + 'AddModal');
       if (m) {
         m.classList.add('hidden');
         m.classList.remove('flex');
       }
     }
 
-    function submitBTUAddPartner() {
-      const name = document.getElementById('btuAddPartner').value.trim();
+    function submitTrackerAddPartner(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const name = document.getElementById(cfg.idPrefix + 'AddPartner').value.trim();
       if (!name) { alert('Select a partner.'); return; }
       google.script.run
         .withSuccessHandler(function(res) {
-          if (res && res.status === 'EXISTS') alert('Partner is already in the BTU tracker.');
-          closeBTUAddModal();
-          loadBTUTracker();
+          if (res && res.status === 'EXISTS') alert('Partner is already in the tracker.');
+          closeTrackerAddModal(trackerKey);
+          loadTracker(trackerKey);
         })
         .withFailureHandler(handleError)
-        .addBTUPartner({
+        .addTrackerPartnersBulk(cfg.sheetName, [{
           storeName: name,
-          city: document.getElementById('btuAddCity').value.trim(),
-          storeId: document.getElementById('btuAddStoreId').value.trim()
+          city: document.getElementById(cfg.idPrefix + 'AddCity').value.trim(),
+          storeId: document.getElementById(cfg.idPrefix + 'AddStoreId').value.trim()
+        }]);
+    }
+
+    // Paste several partners at once - one per line, "Name, City, StoreID"
+    // (City/StoreID optional) - instead of repeating the single-add modal.
+    function submitTrackerAddBulk(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const raw = (document.getElementById(cfg.idPrefix + 'AddBulk').value || '').trim();
+      if (!raw) { alert('Paste at least one partner, one per line.'); return; }
+
+      const rows = raw.split('\n').map(function(line) {
+        const parts = line.split(',').map(function(p) { return p.trim(); });
+        if (!parts[0]) return null;
+        return { storeName: parts[0], city: parts[1] || '', storeId: parts[2] || '' };
+      }).filter(Boolean);
+
+      if (!rows.length) { alert('No valid rows found.'); return; }
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          alert('Added ' + res.addedCount + ', skipped (already in tracker) ' + res.skippedCount + ', failed ' + res.failedCount + '.');
+          closeTrackerAddModal(trackerKey);
+          loadTracker(trackerKey);
+        })
+        .withFailureHandler(handleError)
+        .addTrackerPartnersBulk(cfg.sheetName, rows);
+    }
+
+    // Jump to Create Promo (tab1) with Partner/Promo Purpose pre-filled from
+    // a tracker row, so the AM doesn't have to type the partner name twice.
+    function goToCreatePromoFromTracker(trackerKey, idx) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const r = trackerState[trackerKey].filteredRows[idx];
+      if (!r) return;
+      switchTab('tab1');
+      const partnerInput = document.getElementById('partnerInput');
+      if (partnerInput) {
+        partnerInput.value = r.storeName;
+        loadProductsAndAddresses();
+      }
+      const purposeSelect = document.getElementById('promoPurpose');
+      if (purposeSelect) {
+        const hasOption = Array.prototype.some.call(purposeSelect.options, function(o) {
+          return o.value === cfg.purposeValue;
         });
+        if (hasOption) {
+          purposeSelect.value = cfg.purposeValue;
+          handlePromoPurposeChange();
+        }
+      }
+    }
+
+    // National (total-Poland) GMV coverage KPI - pulled from the live
+    // BigQuery-backed "National_GMV" sheet (see Data_Pull.gs), not from the
+    // tracker's own GMV Weight column, which only ever covers partners
+    // already in the tracker.
+    function loadTrackerNationalGmv(trackerKey) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const el = document.getElementById(cfg.idPrefix + 'NationalKpi');
+      if (!el) return;
+      el.innerHTML = '<div class="text-xs text-gray-400">Loading national GMV coverage…</div>';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          renderTrackerNationalGmv(trackerKey, res);
+        })
+        .withFailureHandler(function(err) {
+          console.error(trackerKey + ': national GMV error', err);
+          el.innerHTML = '<div class="text-xs text-gray-400">National GMV coverage unavailable (' + (err && err.message ? escapeHtml(err.message) : 'no data yet') + ').</div>';
+        })
+        .getTrackerNationalGmvCoverage(cfg.sheetName);
+    }
+
+    function renderTrackerNationalGmv(trackerKey, res) {
+      const cfg = TRACKER_CONFIG[trackerKey];
+      const el = document.getElementById(cfg.idPrefix + 'NationalKpi');
+      if (!el) return;
+      if (!res || !res.generatedAt) {
+        el.innerHTML = '<div class="text-xs text-gray-400">National GMV coverage not available yet - run refreshNationalGmv() in Data_Pull.gs.</div>';
+        return;
+      }
+      el.innerHTML =
+        '<div class="bg-white rounded-xl shadow-sm p-5 border-2 border-yellow-400">' +
+          '<div class="flex items-center justify-between flex-wrap gap-2">' +
+            '<div>' +
+              '<div class="text-xs text-gray-500 font-semibold uppercase">Total Poland GMV in Promo</div>' +
+              '<div class="text-3xl font-extrabold text-gray-900 mt-1">' + pct1(res.pctGmvCovered) + '</div>' +
+              '<div class="text-[10px] text-gray-400 mt-1">' + cfg.sheetName + ' tracker + matching Master_Log promos, vs. all of Poland. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
     }
 
 

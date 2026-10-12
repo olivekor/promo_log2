@@ -2703,17 +2703,37 @@ function getBTUAmTeamMap_() {
   return map;
 }
 
+// Which trackers exist: sheet name -> Master_Log "Promo Purpose" value they
+// match promos against. Add a new entry here (and nowhere else) to wire up
+// a future seasonal tracker the same way BTU and Christmas work.
+var TRACKER_DEFINITIONS = {
+  'BTU': { promoPurpose: 'back to university' },
+  'Christmas': { promoPurpose: 'christmas' }
+};
+
 function getBTUTracker() {
+  return getTracker_('BTU');
+}
+
+function getChristmasTracker() {
+  return getTracker_('Christmas');
+}
+
+function getTracker_(sheetName) {
+  var def = TRACKER_DEFINITIONS[sheetName];
+  if (!def) throw new Error('Unknown tracker: ' + sheetName);
+  var promoPurpose = def.promoPurpose;
+
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('BTU');
+  var sheet = ss.getSheetByName(sheetName);
 
   Logger.log('BTU DEBUG 0 - function started');
   Logger.log('BTU DEBUG 0a - spreadsheet: ' + ss.getName());
   Logger.log('BTU DEBUG 0b - sheet found: ' + !!sheet);
 
   if (!sheet) {
-    sheet = ss.insertSheet('BTU');
-    Logger.log('BTU DEBUG 0c - BTU sheet was missing, created new sheet');
+    sheet = ss.insertSheet(sheetName);
+    Logger.log('BTU DEBUG 0c - ' + sheetName + ' sheet was missing, created new sheet');
   }
 
   ensureBTUHeader_(sheet);
@@ -2814,7 +2834,7 @@ function getBTUTracker() {
       r[6] == null ? '' : r[6]
     ).trim().toLowerCase();
 
-    if (!name || purpose !== 'back to university') return;
+    if (!name || purpose !== promoPurpose) return;
 
     var status = String(
       r[2] == null ? '' : r[2]
@@ -2902,7 +2922,7 @@ function getBTUTracker() {
       lastUpdated: r[11] instanceof Date
         ? r[11].toISOString()
         : String(r[11] || ''),
-      source: String(r[12] || 'Initial BTU list')
+      source: String(r[12] || 'Initial list')
     };
   });
 
@@ -3009,6 +3029,12 @@ function makeBTUSummary_(rows) {
 
   var list = Object.keys(cities).map(function(k) {
     var c = cities[k];
+    // GMV Weight (BTU!D) is already each store's share of its CITY's total
+    // GMV (backfilled from "gmv data" -> store_share_of_city_gmv). So
+    // c.promoWeight etc. are already expressed against the real city GMV -
+    // dividing by c.totalWeight (the sum of weights of tracker rows ONLY)
+    // would re-scale them against a partial, tracker-only denominator and
+    // inflate every rate. Use the weights directly.
     return {
       city: c.city,
       total: c.total,
@@ -3017,13 +3043,13 @@ function makeBTUSummary_(rows) {
       highDiscount: c.highDiscount,
       prime10: c.prime10,
       prime5: c.prime5,
-      promoRate: c.totalWeight ? c.promoWeight / c.totalWeight : 0,
-      highDiscountRate: c.totalWeight ? c.highDiscountWeight / c.totalWeight : 0,
-      bppRate: c.totalWeight ? c.bppWeight / c.totalWeight : 0,
-      prime5Rate: c.totalWeight ? c.prime5Weight / c.totalWeight : 0,
+      promoRate: c.promoWeight,
+      highDiscountRate: c.highDiscountWeight,
+      bppRate: c.bppWeight,
+      prime5Rate: c.prime5Weight,
       // Keep the legacy naming for the UI.
       springPromoRate: c.totalWeight,
-      promoGmvRate: c.totalWeight ? c.promoWeight / c.totalWeight : 0
+      promoGmvRate: c.promoWeight
     };
   });
 
@@ -3063,14 +3089,36 @@ function makeBTUSummary_(rows) {
 }
 
 function saveBTUTrackerRow(rowData) {
+  return saveTrackerRow_('BTU', rowData);
+}
+function saveChristmasTrackerRow(rowData) {
+  return saveTrackerRow_('Christmas', rowData);
+}
+
+// Batch version: saves every dirty row in one call so the UI only ever
+// needs a single "Save All" round trip, instead of one per edited row.
+function saveTrackerRowsBulk(sheetName, rowsData) {
+  var results = (rowsData || []).map(function(rowData) {
+    try {
+      return saveTrackerRow_(sheetName, rowData);
+    } catch (e) {
+      return { status: 'ERROR', rowIndex: rowData.rowIndex, message: e.message };
+    }
+  });
+  var failed = results.filter(function(r) { return r.status === 'ERROR'; });
+  return { status: failed.length ? 'PARTIAL' : 'SUCCESS', results: results, failedCount: failed.length };
+}
+
+function saveTrackerRow_(sheetName, rowData) {
+  if (!TRACKER_DEFINITIONS[sheetName]) throw new Error('Unknown tracker: ' + sheetName);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('BTU');
-  if (!sheet) throw new Error('Nie znaleziono arkusza BTU.');
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) throw new Error('Nie znaleziono arkusza ' + sheetName + '.');
   ensureBTUHeader_(sheet);
 
   var rowIndex = Number(rowData.rowIndex);
   if (!rowIndex || rowIndex < 2 || rowIndex > sheet.getLastRow()) {
-    throw new Error('Nieprawidłowy numer wiersza BTU.');
+    throw new Error('Nieprawidłowy numer wiersza ' + sheetName + '.');
   }
 
   var accountManager = String(rowData.accountManager || '').trim();
@@ -3100,18 +3148,42 @@ function saveBTUTrackerRow(rowData) {
 }
 
 function addBTUPartner(rowData) {
+  return addTrackerPartner_('BTU', rowData);
+}
+function addChristmasPartner(rowData) {
+  return addTrackerPartner_('Christmas', rowData);
+}
+
+// Batch version: adds several partners (e.g. pasted from a spreadsheet) in
+// one call instead of one modal submission per partner.
+function addTrackerPartnersBulk(sheetName, rowsData) {
+  var results = (rowsData || []).map(function(rowData) {
+    try {
+      return addTrackerPartner_(sheetName, rowData);
+    } catch (e) {
+      return { status: 'ERROR', storeName: rowData.storeName, message: e.message };
+    }
+  });
+  var added = results.filter(function(r) { return r.status === 'SUCCESS'; });
+  var skipped = results.filter(function(r) { return r.status === 'EXISTS'; });
+  var failed = results.filter(function(r) { return r.status === 'ERROR'; });
+  return { status: 'SUCCESS', results: results, addedCount: added.length, skippedCount: skipped.length, failedCount: failed.length };
+}
+
+function addTrackerPartner_(sheetName, rowData) {
+  if (!TRACKER_DEFINITIONS[sheetName]) throw new Error('Unknown tracker: ' + sheetName);
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('BTU');
-  if (!sheet) sheet = ss.insertSheet('BTU');
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) sheet = ss.insertSheet(sheetName);
   ensureBTUHeader_(sheet);
 
   var name = String(rowData.storeName || '').trim();
   if (!name) throw new Error('Podaj nazwę partnera.');
 
-  var existing = getBTUTracker().rows;
+  var existing = getTracker_(sheetName).rows;
   var key = normalizeBTUName_(name);
   var duplicate = existing.find(function(r) { return normalizeBTUName_(r.storeName) === key; });
-  if (duplicate) return { status: 'EXISTS', rowIndex: duplicate.rowIndex };
+  if (duplicate) return { status: 'EXISTS', rowIndex: duplicate.rowIndex, storeName: name };
 
   var partners = getPartnersMasterData_();
   var partner = partners.find(function(p) { return normalizeBTUName_(p.storeName) === key; });
@@ -3135,7 +3207,108 @@ function addBTUPartner(rowData) {
   ];
 
   sheet.appendRow(row);
-  return { status: 'SUCCESS', rowIndex: sheet.getLastRow() };
+  return { status: 'SUCCESS', rowIndex: sheet.getLastRow(), storeName: name };
+}
+
+/**
+ * Total-Poland "% GMV in Promo" for a seasonal tracker (BTU or Christmas).
+ *
+ * Unlike the per-city Summary table (which is scoped to GMV of partners
+ * already sitting in the tracker - see makeBTUSummary_), this is weighted
+ * against the REAL total GMV of the whole country, pulled live from
+ * BigQuery into the "National_GMV" sheet by Data_Pull.gs's
+ * refreshNationalGmv() (run weekly, or manually when fresher data is
+ * needed). A partner counts as "covered" if either:
+ *   - it's in the tracker with "On promo? = Yes", or
+ *   - it has an APPROVED Master_Log promo whose Promo Purpose matches this
+ *     tracker (resolved by Store Address ID when filled in, otherwise by
+ *     partner name via the Partners sheet's store_id list - a lot of
+ *     Master_Log rows don't have Store Address ID filled in).
+ */
+function getTrackerNationalGmvCoverage(sheetName) {
+  var def = TRACKER_DEFINITIONS[sheetName];
+  if (!def) throw new Error('Unknown tracker: ' + sheetName);
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var gmvSheet = ss.getSheetByName(DATA_PULL_NATIONAL_GMV_SHEET);
+  if (!gmvSheet || gmvSheet.getLastRow() < 2) {
+    return { generatedAt: null, pctGmvCovered: 0, coveredGmv: 0, totalGmv: 0 };
+  }
+
+  // National_GMV columns: store_id, store_address_id, city_code, avg_daily_gmv
+  var gmvRows = gmvSheet.getRange(2, 1, gmvSheet.getLastRow() - 1, 4).getValues();
+
+  // 1. Covered store_id from the tracker itself (On promo? = Yes).
+  var coveredStoreIds = {};
+  var trackerSheet = ss.getSheetByName(sheetName);
+  if (trackerSheet && trackerSheet.getLastRow() >= 2) {
+    var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 7).getValues();
+    trackerRows.forEach(function(r) {
+      var storeId = String(r[2] || '').trim();
+      var onPromo = String(r[6] || '').trim().toLowerCase();
+      if (storeId && onPromo === 'yes') coveredStoreIds[storeId] = true;
+    });
+  }
+
+  // 2. Name -> store_id list, for Master_Log rows with no Store Address ID.
+  var nameToStoreIds = {};
+  var partnersSheet = ss.getSheetByName(PARTNERS_REFERENCE_SHEET);
+  if (partnersSheet && partnersSheet.getLastRow() >= 2) {
+    var pRows = partnersSheet.getRange(2, 1, partnersSheet.getLastRow() - 1, 13).getValues();
+    pRows.forEach(function(r) {
+      var key = normalizeBTUName_(r[0]);
+      var ids = String(r[12] || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      if (key && ids.length) nameToStoreIds[key] = ids;
+    });
+  }
+
+  // 3. Covered Master_Log rows (APPROVED, matching this tracker's Promo Purpose).
+  var coveredAddrIds = {};
+  var master = ss.getSheetByName('Master_Log');
+  if (master && master.getLastRow() >= 2) {
+    var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 7).getValues();
+    masterRows.forEach(function(r) {
+      var status = String(r[2] || '').trim().toUpperCase();
+      var purpose = String(r[6] || '').trim().toLowerCase();
+      if (status !== 'APPROVED' || purpose !== def.promoPurpose) return;
+      var addrId = String(r[5] || '').trim();
+      if (addrId) {
+        coveredAddrIds[addrId] = true;
+      } else {
+        var nameKey = normalizeBTUName_(r[4]);
+        (nameToStoreIds[nameKey] || []).forEach(function(id) { coveredStoreIds[id] = true; });
+      }
+    });
+  }
+
+  var totalGmv = 0;
+  var coveredGmv = 0;
+  gmvRows.forEach(function(r) {
+    var storeId = String(r[0] || '').trim();
+    var addrId = String(r[1] || '').trim();
+    var gmv = toNumber_(r[3]) || 0;
+    totalGmv += gmv;
+    if (coveredStoreIds[storeId] || coveredAddrIds[addrId]) coveredGmv += gmv;
+  });
+
+  var generatedAt = new Date().toISOString();
+  var statusSheet = ss.getSheetByName(DATA_PULL_STATUS_SHEET);
+  if (statusSheet && statusSheet.getLastRow() >= 2) {
+    var statusRows = statusSheet.getRange(2, 1, statusSheet.getLastRow() - 1, 4).getValues();
+    for (var i = 0; i < statusRows.length; i++) {
+      if (String(statusRows[i][0]) === 'National_GMV' && statusRows[i][3] instanceof Date) {
+        generatedAt = statusRows[i][3].toISOString();
+        break;
+      }
+    }
+  }
+
+  return {
+    generatedAt: generatedAt,
+    pctGmvCovered: totalGmv ? coveredGmv / totalGmv : 0,
+    coveredGmv: coveredGmv,
+    totalGmv: totalGmv
+  };
 }
 
 /**
