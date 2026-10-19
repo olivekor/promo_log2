@@ -3691,6 +3691,70 @@ function refreshPrimePartnersFromMasterLog() {
   return { status: 'SUCCESS', approvedScanned: approvedCount, qualified: qualifiedCount };
 }
 
+// Read-only list for the "Prime Week" tab in the app. No stats, just the
+// qualified-partner rows as they sit in the "Prime Partners" sheet.
+function getPrimePartners() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PRIME_WEEK_SHEET);
+  if (!sheet) sheet = ss.insertSheet(PRIME_WEEK_SHEET);
+  var headerLen = ensurePrimePartnersHeader_(sheet);
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var rows = sheet.getRange(2, 1, lastRow - 1, headerLen).getValues();
+  return rows
+    .filter(function(r) { return String(r[0] || '').trim() !== ''; })
+    .map(function(r) {
+      return {
+        partnerName: String(r[0] || ''),
+        storeAddressId: String(r[1] || ''),
+        accountManager: String(r[2] || ''),
+        startDate: r[3] instanceof Date ? Utilities.formatDate(r[3], "GMT+2", "yyyy-MM-dd") : String(r[3] || ''),
+        endDate: r[4] instanceof Date ? Utilities.formatDate(r[4], "GMT+2", "yyyy-MM-dd") : String(r[4] || ''),
+        bppDiscount: typeof r[5] === 'number' ? r[5] : toNumber_(r[5]),
+        promoPurpose: String(r[6] || ''),
+        linkedPromoId: String(r[7] || ''),
+        addedAt: String(r[8] || '')
+      };
+    });
+}
+
+// Lets an AM add a partner to "Prime Partners" directly, without going
+// through Create Promo. Still enforces the same rule as the automatic
+// path: BPP, >=20% BPP Discount, dates overlapping the Prime Week window -
+// just with clear error messages instead of a silent no-op.
+function addPrimePartnerManual(data) {
+  var partnerName = String((data && data.partnerName) || '').trim();
+  if (!partnerName) throw new Error('Partner Name is required.');
+
+  var startVal = data && data.startDate;
+  var endVal = data && data.endDate;
+  if (!startVal || !endVal) throw new Error('Start Date and End Date are required.');
+
+  var bpp = getDiscountNumber_(data && data.bppDiscount);
+  if (bpp === null || bpp < PRIME_WEEK_MIN_BPP_DISCOUNT) {
+    throw new Error('BPP Discount must be at least 20%.');
+  }
+
+  var start = parseDateOnly_(startVal);
+  var end = parseDateOnly_(endVal);
+  var winStart = parseDateOnly_(PRIME_WEEK_START);
+  var winEnd = parseDateOnly_(PRIME_WEEK_END);
+  if (!start || !end || !(start <= winEnd && end >= winStart)) {
+    throw new Error('Dates must overlap the Prime Week window (' + PRIME_WEEK_START + ' to ' + PRIME_WEEK_END + ').');
+  }
+
+  var partnerMaster = findPartnerMaster_(partnerName, getPartnersMasterData_());
+  upsertPrimePartnerRow_(
+    partnerName, (data && data.storeAddressId) || 'ALL',
+    partnerMaster ? partnerMaster.accountManager : '',
+    startVal, endVal, 'BPP', bpp, 'Prime Week', 'MANUAL'
+  );
+
+  return { status: 'SUCCESS' };
+}
+
 function upsertTrackerPartnerFromPromo_(sheetName, promoData, promoId, masterRowIndex) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
