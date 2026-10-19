@@ -737,6 +737,23 @@ function submitPromotionToMasterLog(promoData) {
     }
   }
 
+  // Self-setup AM promos are APPROVED immediately (see isSelfSetupAM above),
+  // so this is the only time they'll ever qualify for Prime Partners -
+  // promos awaiting admin approval get checked in updatePromoStatus instead.
+  if (isSelfSetupAM) {
+    try {
+      upsertPrimePartnerRow_(
+        promoData.partnerName, promoData.storeAddressId || 'ALL',
+        partnerMaster ? partnerMaster.accountManager : '',
+        promoData.startDate, promoData.endDate,
+        promoData.promoStrategy, getDiscountNumber_(promoData.bppDiscount),
+        promoData.promoPurpose, id
+      );
+    } catch (e) {
+      Logger.log('Prime Partners update failed: ' + e.message);
+    }
+  }
+
   return { status: 'SUCCESS', id: id, calculations: calc };
 }
 
@@ -1045,6 +1062,18 @@ function updatePromoStatus(rowIndex, newStatus) {
 
     if (newStatus === 'APPROVED') {
       sheet.getRange(rowIndex, 9).setValue('Yes');
+
+      try {
+        var primeRow = sheet.getRange(rowIndex, 1, 1, 43).getValues()[0];
+        var primePartnerMaster = findPartnerMaster_(String(primeRow[4] || ''), getPartnersMasterData_());
+        upsertPrimePartnerRow_(
+          primeRow[4], primeRow[5],
+          primePartnerMaster ? primePartnerMaster.accountManager : (primeRow[39] || ''),
+          primeRow[9], primeRow[10], primeRow[12], primeRow[14], primeRow[6], primeRow[0]
+        );
+      } catch (e) {
+        Logger.log('Prime Partners update failed: ' + e.message);
+      }
     } else if (newStatus === 'REJECTED') {
       sheet.getRange(rowIndex, 9).setValue('No');
 
@@ -1237,7 +1266,7 @@ function getPromotionsByStatus(targetStatus) {
  * - Always on
  * - Key Event
  * - Back to University
- * - Prime Days
+ * - Prime Week
  * - December BCs campaign
  * - Others
  *
@@ -1254,7 +1283,7 @@ var PITCHING_PURPOSES = [
   'Always on',
   'Key Event',
   'Back to University',
-  'Prime Days',
+  'Prime Week',
   'December BCs campaign',
   'Others'
 ];
@@ -1401,15 +1430,19 @@ function normalizePitchingPurpose_(purpose) {
 
 
   /*
-   * PRIME DAYS
+   * PRIME WEEK (nee "Prime Days" - old rows may still say "Prime Days")
    */
   if (
+    p === 'prime week' ||
+    p === 'prime weeks' ||
+    p === 'primeweek' ||
+    p === 'prime_week' ||
     p === 'prime days' ||
     p === 'prime day' ||
     p === 'primedays' ||
     p === 'prime_day'
   ) {
-    return 'Prime Days';
+    return 'Prime Week';
   }
 
 
@@ -1439,6 +1472,27 @@ function normalizePitchingPurpose_(purpose) {
 
 
   return '';
+}
+
+
+// A Master_Log "Promo Purpose" cell can hold several purposes, comma
+// separated (e.g. "Prime Week, Key Event") since Create Promo allows
+// multi-select. These two helpers are how every consumer of that column
+// (pitching stats, seasonal trackers, Prime Partners) should read it -
+// never compare the raw cell with === any more.
+function splitPromoPurposes_(promoPurpose) {
+  return String(promoPurpose || '')
+    .split(',')
+    .map(function(s) { return s.trim(); })
+    .filter(Boolean);
+}
+
+function promoPurposeIncludes_(promoPurpose, target) {
+  var targetNorm = String(target || '').trim().toLowerCase();
+  if (!targetNorm) return false;
+  return splitPromoPurposes_(promoPurpose).some(function(p) {
+    return p.toLowerCase() === targetNorm;
+  });
 }
 
 
@@ -1825,7 +1879,7 @@ var ALLOWED_AM_EMAILS = [
  *
  * getPitchingOverview()
  *
- * getPitchingOverview('Prime Days')
+ * getPitchingOverview('Prime Week')
  *
  * getPitchingOverview('Key Event')
  *
@@ -2050,12 +2104,17 @@ function getPitchingOverview(promoPurpose) {
 
 
     /*
-     * Promo Purpose
+     * Promo Purpose - a row can now carry several, comma-separated
+     * (e.g. "Prime Week, Key Event"). Each one gets its own stats bucket.
      */
-    var purpose =
-      normalizePitchingPurpose_(
-        row[6]
-      );
+    var purposeList =
+      splitPromoPurposes_(row[6])
+        .map(normalizePitchingPurpose_)
+        .filter(Boolean);
+
+    purposeList = purposeList.filter(function(v, idx) {
+      return purposeList.indexOf(v) === idx;
+    });
 
 
     /*
@@ -2119,30 +2178,32 @@ function getPitchingOverview(promoPurpose) {
      * -------------------------------------------------------
      */
 
-    if (!purpose) {
+    if (!purposeList.length) {
       continue;
     }
 
+    purposeList.forEach(function(purpose) {
 
-    var stats =
-      p.purposeStats[purpose];
+      var stats =
+        p.purposeStats[purpose];
 
-    if (pitched) {
-      stats.pitched = true;
-    }
+      if (pitched) {
+        stats.pitched = true;
+      }
 
-    if (confirmed) {
-      stats.confirmed = true;
-    }
+      if (confirmed) {
+        stats.confirmed = true;
+      }
 
 
-    if (
-      isFinite(cof) &&
-      cof >= 0
-    ) {
+      if (
+        isFinite(cof) &&
+        cof >= 0
+      ) {
 
-      stats.cofunding.push(cof);
-    }
+        stats.cofunding.push(cof);
+      }
+    });
   }
 
 
@@ -3295,8 +3356,7 @@ function getTrackerNationalGmvCoverage(sheetName) {
     var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 7).getValues();
     masterRows.forEach(function(r) {
       var status = String(r[2] || '').trim().toUpperCase();
-      var purpose = String(r[6] || '').trim().toLowerCase();
-      if (status !== 'APPROVED' || purpose !== def.promoPurpose) return;
+      if (status !== 'APPROVED' || !promoPurposeIncludes_(r[6], def.promoPurpose)) return;
       var addrId = String(r[5] || '').trim();
       if (addrId) {
         coveredAddrIds[addrId] = true;
@@ -3502,12 +3562,133 @@ function backfillChristmasGmvWeights() {
 // if any - e.g. 'Back to University' -> 'BTU', 'Get Ready for Christmas' ->
 // 'Christmas'. Returns null for a Promo Purpose with no matching tracker.
 function trackerSheetForPromoPurpose_(promoPurpose) {
-  var purpose = String(promoPurpose || '').trim().toLowerCase();
-  if (!purpose) return null;
+  var purposes = splitPromoPurposes_(promoPurpose);
+  if (!purposes.length) return null;
   var match = Object.keys(TRACKER_DEFINITIONS).filter(function(sheetName) {
-    return TRACKER_DEFINITIONS[sheetName].promoPurpose === purpose;
+    return promoPurposeIncludes_(promoPurpose, TRACKER_DEFINITIONS[sheetName].promoPurpose);
   });
   return match.length ? match[0] : null;
+}
+
+// ============================================================
+// PRIME WEEK QUALIFICATION LIST ("Prime Partners" tab)
+// ============================================================
+// Weeks 48-49, 23 Nov - 6 Dec: a partner is added automatically once an
+// APPROVED promo of theirs (a) has "Prime Week" among its Promo Purpose(s),
+// (b) is a BPP promo, (c) has BPP Discount >= 20%, and (d) its dates overlap
+// the Prime Week window. Unlike BTU/Christmas this is a qualification list,
+// not a pitching tracker - unapproved promos are never added.
+var PRIME_WEEK_SHEET = 'Prime Partners';
+var PRIME_WEEK_START = '2026-11-23';
+var PRIME_WEEK_END = '2026-12-06';
+var PRIME_WEEK_MIN_BPP_DISCOUNT = 0.20; // decimal fraction, same scale as Master_Log column O
+
+function promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, startVal, endVal) {
+  if (!promoPurposeIncludes_(promoPurpose, 'Prime Week')) return false;
+  if (String(promoStrategy || '').trim().toUpperCase() !== 'BPP') return false;
+
+  var bpp = Number(bppDiscountDecimal);
+  if (!isFinite(bpp) || bpp < PRIME_WEEK_MIN_BPP_DISCOUNT) return false;
+
+  var start = parseDateOnly_(startVal);
+  var end = parseDateOnly_(endVal);
+  if (!start || !end) return false;
+
+  var winStart = parseDateOnly_(PRIME_WEEK_START);
+  var winEnd = parseDateOnly_(PRIME_WEEK_END);
+  return start <= winEnd && end >= winStart;
+}
+
+function ensurePrimePartnersHeader_(sheet) {
+  var headers = [
+    'Partner Name', 'Store Address ID', 'Account Manager', 'Start Date', 'End Date',
+    'BPP Discount', 'Promo Purpose', 'Linked Promo ID', 'Added At'
+  ];
+  if (sheet.getLastRow() < 1 || sheet.getRange(1, 1).getValue() !== headers[0]) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+  }
+  return headers.length;
+}
+
+// Adds or updates (by Partner Name + Store Address ID) a row in "Prime
+// Partners", but only if the promo actually qualifies. Safe to call for
+// every APPROVED promo - non-qualifying ones are silently skipped.
+function upsertPrimePartnerRow_(partnerName, storeAddressId, accountManager, startVal, endVal,
+                                 promoStrategy, bppDiscountDecimal, promoPurpose, promoId) {
+  if (!promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, startVal, endVal)) return;
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PRIME_WEEK_SHEET);
+  if (!sheet) sheet = ss.insertSheet(PRIME_WEEK_SHEET);
+  ensurePrimePartnersHeader_(sheet);
+
+  var nameKey = normalizeBTUName_(partnerName);
+  var addrKey = String(storeAddressId || '').trim();
+  var lastRow = sheet.getLastRow();
+  var existingRow = -1;
+
+  if (lastRow >= 2) {
+    var rows = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      if (normalizeBTUName_(rows[i][0]) === nameKey && String(rows[i][1] || '').trim() === addrKey) {
+        existingRow = i + 2;
+        break;
+      }
+    }
+  }
+
+  var values = [
+    partnerName,
+    storeAddressId || 'ALL',
+    accountManager || '',
+    startVal,
+    endVal,
+    bppDiscountDecimal,
+    promoPurpose,
+    promoId || '',
+    Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd HH:mm")
+  ];
+
+  var targetRow = existingRow > 0 ? existingRow : sheet.getLastRow() + 1;
+  sheet.getRange(targetRow, 1, 1, values.length).setValues([values]);
+  sheet.getRange(targetRow, 6).setNumberFormat('0%');
+  sheet.getRange(targetRow, 4, 1, 2).setNumberFormat('yyyy-mm-dd');
+}
+
+// One-time / on-demand full rebuild from Master_Log. Run manually from the
+// Apps Script editor (function dropdown) if historical APPROVED promos need
+// backfilling into "Prime Partners" after this feature shipped.
+function refreshPrimePartnersFromMasterLog() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var master = ss.getSheetByName('Master_Log');
+  if (!master || master.getLastRow() < 2) {
+    return { status: 'SKIPPED', reason: 'Master_Log is empty.' };
+  }
+
+  var rows = master.getRange(2, 1, master.getLastRow() - 1, 43).getValues();
+  var partners = getPartnersMasterData_();
+  var approvedCount = 0;
+  var qualifiedCount = 0;
+
+  rows.forEach(function(row) {
+    var status = String(row[2] || '').trim().toUpperCase();
+    if (status !== 'APPROVED') return;
+    approvedCount++;
+
+    if (promoQualifiesForPrimeWeek_(row[6], row[12], row[14], row[9], row[10])) {
+      qualifiedCount++;
+    }
+
+    var partnerMaster = findPartnerMaster_(String(row[4] || ''), partners);
+    upsertPrimePartnerRow_(
+      row[4], row[5], partnerMaster ? partnerMaster.accountManager : (row[39] || ''),
+      row[9], row[10], row[12], row[14], row[6], row[0]
+    );
+  });
+
+  Logger.log('refreshPrimePartnersFromMasterLog: ' + approvedCount + ' approved rows scanned, ' + qualifiedCount + ' qualified.');
+  return { status: 'SUCCESS', approvedScanned: approvedCount, qualified: qualifiedCount };
 }
 
 function upsertTrackerPartnerFromPromo_(sheetName, promoData, promoId, masterRowIndex) {

@@ -267,6 +267,8 @@
 
         <select
           id="promoPurpose"
+          multiple
+          size="7"
           onchange="handlePromoPurposeChange()"
           class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
         >
@@ -274,10 +276,11 @@
           <option value="Key Event">Key Event</option>
           <option value="Back to University">Back to University</option>
           <option value="Get Ready for Christmas">Get Ready for Christmas</option>
-          <option value="Prime Days">Prime Days</option>
+          <option value="Prime Week">Prime Week</option>
           <option value="December BCs campaign">December BCs campaign</option>
           <option value="Others">Others</option>
         </select>
+        <p class="text-[10px] text-gray-400 mt-1">Przytrzymaj Ctrl / Cmd, aby zaznaczyć kilka celów (np. Prime Week + inna kampania naraz).</p>
 
       </div>
 
@@ -928,7 +931,7 @@
             <option value="Always on">Always on</option>
             <option value="Back to University">Back to University</option>
             <option value="Get Ready for Christmas">Get Ready for Christmas</option>
-            <option value="Prime Days">Prime Days</option>
+            <option value="Prime Week">Prime Week</option>
             <option value="December BCs campaign">December BCs campaign</option>
             <option value="Others">Others</option>
           </select>
@@ -1634,16 +1637,19 @@
 
       <select
         id="editPromoPurpose"
+        multiple
+        size="7"
         class="w-full px-3 py-2 border rounded-lg text-sm bg-white"
       >
         <option value="Always on">Always on</option>
         <option value="Key Event">Key Event</option>
         <option value="Back to University">Back to University</option>
         <option value="Get Ready for Christmas">Get Ready for Christmas</option>
-        <option value="Prime Days">Prime Days</option>
+        <option value="Prime Week">Prime Week</option>
         <option value="December BCs campaign">December BCs campaign</option>
         <option value="Others">Others</option>
       </select>
+      <p class="text-[10px] text-gray-400 mt-1">Przytrzymaj Ctrl / Cmd, aby zaznaczyć kilka celów.</p>
 
     </div>
 
@@ -1983,7 +1989,10 @@
     }
 function handlePromoPurposeChange() {
 
-  const purpose = document.getElementById('promoPurpose')?.value;
+  const purposeSelect = document.getElementById('promoPurpose');
+  const selectedPurposes = purposeSelect
+    ? Array.from(purposeSelect.selectedOptions).map(opt => opt.value)
+    : [];
   const budgetSelect = document.getElementById('budgetSource');
 
   if (!budgetSelect) return;
@@ -1994,7 +2003,7 @@ function handlePromoPurposeChange() {
 
   if (!top3Option) return;
 
-  const isBTU = purpose === 'Back to University';
+  const isBTU = selectedPurposes.includes('Back to University');
 
   if (isBTU) {
 
@@ -3095,6 +3104,31 @@ function updateEditStartDateConstraint() {
       return selectedOptions.join(', ');
     }
 
+    // Promo Purpose is a multi-select (ctrl/cmd+click) - reads it as a
+    // comma-separated string, the same way it gets stored in Master_Log.
+    function getSelectedPromoPurposes(selectId) {
+      const select = document.getElementById(selectId || 'promoPurpose');
+      if (!select) return '';
+      const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+      return selectedOptions.join(', ');
+    }
+
+    // Reverse of the above - selects every option whose value appears in a
+    // comma-separated string (used when loading a promo into Edit Promo).
+    function setSelectedPromoPurposes(selectId, commaString) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const values = String(commaString || '').split(',').map(s => s.trim()).filter(Boolean);
+      Array.from(select.options).forEach(opt => {
+        opt.selected = values.includes(opt.value);
+      });
+      // Nothing matched (e.g. blank/legacy row) - fall back to "Always on".
+      if (!Array.from(select.selectedOptions).length) {
+        const fallback = select.querySelector('option[value="Always on"]');
+        if (fallback) fallback.selected = true;
+      }
+    }
+
 
     /* ========================================================= */
     /* SUBMIT PROMO */
@@ -3307,6 +3341,11 @@ function updateEditStartDateConstraint() {
     return;
   }
 
+  if (!getSelectedPromoPurposes('promoPurpose')) {
+    alert('Please select at least one Promo Purpose!');
+    return;
+  }
+
   const isMultiple =
     document.getElementById('multipleCampaigns')?.checked === true;
 
@@ -3328,7 +3367,7 @@ function updateEditStartDateConstraint() {
     partnerName: partnerName,
     storeAddressId: getSelectedStoreAddresses(),
     promoPurpose:
-      document.getElementById('promoPurpose').value,
+      getSelectedPromoPurposes('promoPurpose'),
     pitched:
       document.getElementById('pitched').value,
     confirmed:
@@ -4061,7 +4100,7 @@ function updateEditStartDateConstraint() {
       document.getElementById('editRowIndex').value = promo.rowIndex || '';
       document.getElementById('editPartnerName').value = promo.partnerName || '';
       document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
-      document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+      setSelectedPromoPurposes('editPromoPurpose', promo.promoPurpose || 'Always on');
       document.getElementById('editPitched').value = promo.pitched || 'Yes';
       document.getElementById('editConfirmed').value = promo.confirmed || 'No';
       document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
@@ -4092,7 +4131,7 @@ function updateEditStartDateConstraint() {
       document.getElementById('editRowIndex').value = promo.rowIndex || '';
       document.getElementById('editPartnerName').value = promo.partnerName || '';
       document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
-      document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+      setSelectedPromoPurposes('editPromoPurpose', promo.promoPurpose || 'Always on');
       document.getElementById('editPitched').value = promo.pitched || 'Yes';
       document.getElementById('editConfirmed').value = promo.confirmed || 'Yes';
       document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
@@ -4139,7 +4178,7 @@ function updateEditStartDateConstraint() {
       const promoData = {
         partnerName: document.getElementById('editPartnerName').value,
         storeAddressId: document.getElementById('editStoreAddressId').value,
-        promoPurpose: document.getElementById('editPromoPurpose').value,
+        promoPurpose: getSelectedPromoPurposes('editPromoPurpose'),
         pitched: document.getElementById('editPitched').value,
         confirmed: document.getElementById('editConfirmed').value,
         activationMethod: document.getElementById('editActivationMethod').value,
@@ -4521,7 +4560,7 @@ function openEditModalByRowIndex(rowIndex) {
   document.getElementById('editRowIndex').value = promo.rowIndex || '';
   document.getElementById('editPartnerName').value = promo.partnerName || '';
   document.getElementById('editStoreAddressId').value = promo.storeAddressId || '';
-  document.getElementById('editPromoPurpose').value = promo.promoPurpose || 'Always on';
+  setSelectedPromoPurposes('editPromoPurpose', promo.promoPurpose || 'Always on');
   document.getElementById('editPitched').value = promo.pitched || 'Yes';
   document.getElementById('editConfirmed').value = promo.confirmed || 'No';
   document.getElementById('editActivationMethod').value = promo.activationMethod || 'AM';
