@@ -494,6 +494,7 @@
         >
           <option value="Standard">Standard</option>
           <option value="BPP">BPP (Better Prime Promo)</option>
+          <option value="Prime Exclusive">Prime Exclusive</option>
         </select>
 
       </div>
@@ -1175,6 +1176,7 @@
         <select id="fcPromoStrategy" onchange="fcToggleBpp()" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
           <option value="Standard">Standard</option>
           <option value="BPP">BPP</option>
+          <option value="Prime Exclusive">Prime Exclusive</option>
         </select>
       </div>
       <div>
@@ -1621,6 +1623,7 @@
       >
         <option value="Standard">Standard</option>
         <option value="BPP">BPP (Better Prime Promo)</option>
+        <option value="Prime Exclusive">Prime Exclusive</option>
       </select>
 
     </div>
@@ -1741,7 +1744,7 @@
     <div class="glovo-card p-5">
       <h2 class="text-base font-bold text-gray-800">Prime Week Partners</h2>
       <p class="text-xs text-gray-600 mt-1">
-        Weeks 48-49 (23 Nov - 6 Dec). A partner qualifies with a BPP promo of at least 20% BPP Discount, dates overlapping the window.
+        Weeks 48-49 (23 Nov - 6 Dec). A partner qualifies with a BPP promo (BPP Discount &ge; 20%) or a Prime Exclusive promo (Standard Discount &ge; 20%), dates overlapping the window.
         Partners are added automatically once a qualifying promo is approved - or add one manually below.
       </p>
     </div>
@@ -1750,7 +1753,7 @@
     <div class="glovo-card p-5">
       <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3">Add Manually</h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
         <div class="md:col-span-2">
           <label class="block text-xs font-medium text-gray-600 mb-1">Partner Name</label>
           <input type="text" id="primePartnerName" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Partner name">
@@ -1758,6 +1761,13 @@
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Store Address ID</label>
           <input type="text" id="primeStoreAddressId" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="ALL">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Promo Strategy</label>
+          <select id="primePromoStrategy" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+            <option value="BPP">BPP</option>
+            <option value="Prime Exclusive">Prime Exclusive</option>
+          </select>
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
@@ -1768,12 +1778,12 @@
           <input type="date" id="primeEndDate" class="w-full px-3 py-2 border rounded-lg text-sm">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">BPP Discount (%)</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Discount (%)</label>
           <input type="number" id="primeBppDiscount" min="20" max="100" placeholder="20" class="w-full px-3 py-2 border rounded-lg text-sm">
         </div>
       </div>
 
-      <p class="text-[10px] text-red-500 font-semibold mt-2">Minimum 20% BPP Discount required. Dates must overlap 23 Nov - 6 Dec.</p>
+      <p class="text-[10px] text-red-500 font-semibold mt-2">Minimum 20% discount required (BPP Discount for BPP, Standard Discount for Prime Exclusive). Dates must overlap 23 Nov - 6 Dec.</p>
 
       <div class="mt-3">
         <button
@@ -1804,12 +1814,13 @@
             <th class="p-2 text-left">Account Manager</th>
             <th class="p-2 text-left">Start Date</th>
             <th class="p-2 text-left">End Date</th>
-            <th class="p-2 text-left">BPP Discount</th>
+            <th class="p-2 text-left">Promo Strategy</th>
+            <th class="p-2 text-left">Discount</th>
             <th class="p-2 text-left">Promo Purpose</th>
           </tr>
         </thead>
         <tbody id="primePartnersBody">
-          <tr><td colspan="7" class="p-4 text-center text-gray-400">Loading...</td></tr>
+          <tr><td colspan="8" class="p-4 text-center text-gray-400">Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -2210,13 +2221,13 @@ function updateEditStartDateConstraint() {
 
     function loadPrimePartners() {
       const body = document.getElementById('primePartnersBody');
-      if (body) body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400">Loading...</td></tr>';
+      if (body) body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-400">Loading...</td></tr>';
 
       google.script.run
         .withSuccessHandler(renderPrimePartners)
         .withFailureHandler(function(err) {
           if (body) {
-            body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-red-500">Error: ' +
+            body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-red-500">Error: ' +
               escapeHtml(err && err.message ? err.message : String(err)) + '</td></tr>';
           }
         })
@@ -2228,13 +2239,13 @@ function updateEditStartDateConstraint() {
       if (!body) return;
 
       if (!rows || !rows.length) {
-        body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-gray-400">No qualified partners yet.</td></tr>';
+        body.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-400">No qualified partners yet.</td></tr>';
         return;
       }
 
       body.innerHTML = rows.map(function(r) {
-        const bppPct = (r.bppDiscount !== null && r.bppDiscount !== undefined && isFinite(r.bppDiscount))
-          ? (Math.round(r.bppDiscount * 1000) / 10) + '%'
+        const discountPct = (r.discountPct !== null && r.discountPct !== undefined && isFinite(r.discountPct))
+          ? (Math.round(r.discountPct * 1000) / 10) + '%'
           : '';
         return '<tr class="border-t">' +
           '<td class="p-2 font-semibold">' + escapeHtml(r.partnerName) + '</td>' +
@@ -2242,7 +2253,8 @@ function updateEditStartDateConstraint() {
           '<td class="p-2">' + escapeHtml(r.accountManager) + '</td>' +
           '<td class="p-2">' + escapeHtml(r.startDate) + '</td>' +
           '<td class="p-2">' + escapeHtml(r.endDate) + '</td>' +
-          '<td class="p-2">' + bppPct + '</td>' +
+          '<td class="p-2">' + escapeHtml(r.promoStrategy) + '</td>' +
+          '<td class="p-2">' + discountPct + '</td>' +
           '<td class="p-2">' + escapeHtml(r.promoPurpose) + '</td>' +
           '</tr>';
       }).join('');
@@ -2251,9 +2263,10 @@ function updateEditStartDateConstraint() {
     function submitPrimePartnerManual() {
       const partnerName = document.getElementById('primePartnerName').value.trim();
       const storeAddressId = document.getElementById('primeStoreAddressId').value.trim();
+      const promoStrategy = document.getElementById('primePromoStrategy').value;
       const startDate = document.getElementById('primeStartDate').value;
       const endDate = document.getElementById('primeEndDate').value;
-      const bppDiscount = document.getElementById('primeBppDiscount').value;
+      const discount = document.getElementById('primeBppDiscount').value;
 
       if (!partnerName) {
         alert('Please enter a Partner Name.');
@@ -2263,8 +2276,8 @@ function updateEditStartDateConstraint() {
         alert('Please enter Start Date and End Date.');
         return;
       }
-      if (!bppDiscount || Number(bppDiscount) < 20) {
-        alert('BPP Discount must be at least 20%.');
+      if (!discount || Number(discount) < 20) {
+        alert('Discount must be at least 20%.');
         return;
       }
 
@@ -2297,9 +2310,10 @@ function updateEditStartDateConstraint() {
         .addPrimePartnerManual({
           partnerName: partnerName,
           storeAddressId: storeAddressId || 'ALL',
+          promoStrategy: promoStrategy,
           startDate: startDate,
           endDate: endDate,
-          bppDiscount: bppDiscount
+          discount: discount
         });
     }
 

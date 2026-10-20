@@ -747,6 +747,7 @@ function submitPromotionToMasterLog(promoData) {
         partnerMaster ? partnerMaster.accountManager : '',
         promoData.startDate, promoData.endDate,
         promoData.promoStrategy, getDiscountNumber_(promoData.bppDiscount),
+        getDiscountNumber_(promoData.discount),
         promoData.promoPurpose, id
       );
     } catch (e) {
@@ -1069,7 +1070,7 @@ function updatePromoStatus(rowIndex, newStatus) {
         upsertPrimePartnerRow_(
           primeRow[4], primeRow[5],
           primePartnerMaster ? primePartnerMaster.accountManager : (primeRow[39] || ''),
-          primeRow[9], primeRow[10], primeRow[12], primeRow[14], primeRow[6], primeRow[0]
+          primeRow[9], primeRow[10], primeRow[12], primeRow[14], primeRow[13], primeRow[6], primeRow[0]
         );
       } catch (e) {
         Logger.log('Prime Partners update failed: ' + e.message);
@@ -3575,20 +3576,29 @@ function trackerSheetForPromoPurpose_(promoPurpose) {
 // ============================================================
 // Weeks 48-49, 23 Nov - 6 Dec: a partner is added automatically once an
 // APPROVED promo of theirs (a) has "Prime Week" among its Promo Purpose(s),
-// (b) is a BPP promo, (c) has BPP Discount >= 20%, and (d) its dates overlap
-// the Prime Week window. Unlike BTU/Christmas this is a qualification list,
-// not a pitching tracker - unapproved promos are never added.
+// (b) is either a BPP promo with BPP Discount >= 20%, OR a Prime Exclusive
+// promo with Standard Discount >= 20%, and (c) its dates overlap the Prime
+// Week window. Unlike BTU/Christmas this is a qualification list, not a
+// pitching tracker - unapproved promos are never added.
 var PRIME_WEEK_SHEET = 'Prime Partners';
 var PRIME_WEEK_START = '2026-11-23';
 var PRIME_WEEK_END = '2026-12-06';
-var PRIME_WEEK_MIN_BPP_DISCOUNT = 0.20; // decimal fraction, same scale as Master_Log column O
+var PRIME_WEEK_MIN_BPP_DISCOUNT = 0.20; // decimal fraction, same scale as Master_Log columns N/O
 
-function promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, startVal, endVal) {
+function promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, standardDiscountDecimal, startVal, endVal) {
   if (!promoPurposeIncludes_(promoPurpose, 'Prime Week')) return false;
-  if (String(promoStrategy || '').trim().toUpperCase() !== 'BPP') return false;
 
-  var bpp = Number(bppDiscountDecimal);
-  if (!isFinite(bpp) || bpp < PRIME_WEEK_MIN_BPP_DISCOUNT) return false;
+  var strategy = String(promoStrategy || '').trim().toUpperCase();
+  var relevantDiscount;
+  if (strategy === 'BPP') {
+    relevantDiscount = Number(bppDiscountDecimal);
+  } else if (strategy === 'PRIME EXCLUSIVE') {
+    relevantDiscount = Number(standardDiscountDecimal);
+  } else {
+    return false;
+  }
+
+  if (!isFinite(relevantDiscount) || relevantDiscount < PRIME_WEEK_MIN_BPP_DISCOUNT) return false;
 
   var start = parseDateOnly_(startVal);
   var end = parseDateOnly_(endVal);
@@ -3602,7 +3612,7 @@ function promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDec
 function ensurePrimePartnersHeader_(sheet) {
   var headers = [
     'Partner Name', 'Store Address ID', 'Account Manager', 'Start Date', 'End Date',
-    'BPP Discount', 'Promo Purpose', 'Linked Promo ID', 'Added At'
+    'Discount %', 'Promo Strategy', 'Promo Purpose', 'Linked Promo ID', 'Added At'
   ];
   if (sheet.getLastRow() < 1 || sheet.getRange(1, 1).getValue() !== headers[0]) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -3615,8 +3625,8 @@ function ensurePrimePartnersHeader_(sheet) {
 // Partners", but only if the promo actually qualifies. Safe to call for
 // every APPROVED promo - non-qualifying ones are silently skipped.
 function upsertPrimePartnerRow_(partnerName, storeAddressId, accountManager, startVal, endVal,
-                                 promoStrategy, bppDiscountDecimal, promoPurpose, promoId) {
-  if (!promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, startVal, endVal)) return;
+                                 promoStrategy, bppDiscountDecimal, standardDiscountDecimal, promoPurpose, promoId) {
+  if (!promoQualifiesForPrimeWeek_(promoPurpose, promoStrategy, bppDiscountDecimal, standardDiscountDecimal, startVal, endVal)) return;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(PRIME_WEEK_SHEET);
@@ -3638,13 +3648,17 @@ function upsertPrimePartnerRow_(partnerName, storeAddressId, accountManager, sta
     }
   }
 
+  var strategyUpper = String(promoStrategy || '').trim().toUpperCase();
+  var discountUsed = strategyUpper === 'BPP' ? bppDiscountDecimal : standardDiscountDecimal;
+
   var values = [
     partnerName,
     storeAddressId || 'ALL',
     accountManager || '',
     startVal,
     endVal,
-    bppDiscountDecimal,
+    discountUsed,
+    promoStrategy,
     promoPurpose,
     promoId || '',
     Utilities.formatDate(new Date(), "GMT+2", "yyyy-MM-dd HH:mm")
@@ -3676,14 +3690,14 @@ function refreshPrimePartnersFromMasterLog() {
     if (status !== 'APPROVED') return;
     approvedCount++;
 
-    if (promoQualifiesForPrimeWeek_(row[6], row[12], row[14], row[9], row[10])) {
+    if (promoQualifiesForPrimeWeek_(row[6], row[12], row[14], row[13], row[9], row[10])) {
       qualifiedCount++;
     }
 
     var partnerMaster = findPartnerMaster_(String(row[4] || ''), partners);
     upsertPrimePartnerRow_(
       row[4], row[5], partnerMaster ? partnerMaster.accountManager : (row[39] || ''),
-      row[9], row[10], row[12], row[14], row[6], row[0]
+      row[9], row[10], row[12], row[14], row[13], row[6], row[0]
     );
   });
 
@@ -3712,18 +3726,20 @@ function getPrimePartners() {
         accountManager: String(r[2] || ''),
         startDate: r[3] instanceof Date ? Utilities.formatDate(r[3], "GMT+2", "yyyy-MM-dd") : String(r[3] || ''),
         endDate: r[4] instanceof Date ? Utilities.formatDate(r[4], "GMT+2", "yyyy-MM-dd") : String(r[4] || ''),
-        bppDiscount: typeof r[5] === 'number' ? r[5] : toNumber_(r[5]),
-        promoPurpose: String(r[6] || ''),
-        linkedPromoId: String(r[7] || ''),
-        addedAt: String(r[8] || '')
+        discountPct: typeof r[5] === 'number' ? r[5] : toNumber_(r[5]),
+        promoStrategy: String(r[6] || ''),
+        promoPurpose: String(r[7] || ''),
+        linkedPromoId: String(r[8] || ''),
+        addedAt: String(r[9] || '')
       };
     });
 }
 
 // Lets an AM add a partner to "Prime Partners" directly, without going
 // through Create Promo. Still enforces the same rule as the automatic
-// path: BPP, >=20% BPP Discount, dates overlapping the Prime Week window -
-// just with clear error messages instead of a silent no-op.
+// path: BPP or Prime Exclusive, >=20% discount, dates overlapping the
+// Prime Week window - just with clear error messages instead of a silent
+// no-op.
 function addPrimePartnerManual(data) {
   var partnerName = String((data && data.partnerName) || '').trim();
   if (!partnerName) throw new Error('Partner Name is required.');
@@ -3732,9 +3748,15 @@ function addPrimePartnerManual(data) {
   var endVal = data && data.endDate;
   if (!startVal || !endVal) throw new Error('Start Date and End Date are required.');
 
-  var bpp = getDiscountNumber_(data && data.bppDiscount);
-  if (bpp === null || bpp < PRIME_WEEK_MIN_BPP_DISCOUNT) {
-    throw new Error('BPP Discount must be at least 20%.');
+  var strategy = String((data && data.promoStrategy) || 'BPP').trim();
+  var strategyUpper = strategy.toUpperCase();
+  if (strategyUpper !== 'BPP' && strategyUpper !== 'PRIME EXCLUSIVE') {
+    throw new Error('Promo Strategy must be BPP or Prime Exclusive.');
+  }
+
+  var discount = getDiscountNumber_(data && data.discount);
+  if (discount === null || discount < PRIME_WEEK_MIN_BPP_DISCOUNT) {
+    throw new Error('Discount must be at least 20%.');
   }
 
   var start = parseDateOnly_(startVal);
@@ -3745,11 +3767,14 @@ function addPrimePartnerManual(data) {
     throw new Error('Dates must overlap the Prime Week window (' + PRIME_WEEK_START + ' to ' + PRIME_WEEK_END + ').');
   }
 
+  var bppDiscount = strategyUpper === 'BPP' ? discount : null;
+  var standardDiscount = strategyUpper === 'PRIME EXCLUSIVE' ? discount : null;
+
   var partnerMaster = findPartnerMaster_(partnerName, getPartnersMasterData_());
   upsertPrimePartnerRow_(
     partnerName, (data && data.storeAddressId) || 'ALL',
     partnerMaster ? partnerMaster.accountManager : '',
-    startVal, endVal, 'BPP', bpp, 'Prime Week', 'MANUAL'
+    startVal, endVal, strategy, bppDiscount, standardDiscount, 'Prime Week', 'MANUAL'
   );
 
   return { status: 'SUCCESS' };
