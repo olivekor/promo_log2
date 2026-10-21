@@ -3419,6 +3419,40 @@ function getTrackerNationalGmvCoverage(sheetName) {
   });
   var pctGmvCoveredTop6 = top6TotalGmv ? top6CoveredGmv / top6TotalGmv : 0;
 
+  // Ultra/Max/Med/Min strategic-importance tiers (same grouping Kasia's
+  // team uses for BTU/Christmas targets) - built from EVERY city present
+  // in National_GMV, not just the 7-city SUMMARY_CITIES list above, since
+  // Med/Min pull in cities (QLU, SZZ, QYY, RZE, BZG, SZY, ...) that aren't
+  // in that shortlist. Any city not explicitly placed in Ultra/Max/Med/
+  // Min's own two cities is "Tier 4" and folds into Min.
+  var explicitTierCities = {};
+  ['Ultra', 'Max', 'Med'].forEach(function(tier) {
+    GMV_TIER_CITIES[tier].forEach(function(city) { explicitTierCities[city] = tier; });
+  });
+  GMV_TIER_CITIES.Min.forEach(function(city) { explicitTierCities[city] = 'Min'; });
+
+  var tierTotals = {
+    Ultra: { totalGmv: 0, coveredGmv: 0 },
+    Max: { totalGmv: 0, coveredGmv: 0 },
+    Med: { totalGmv: 0, coveredGmv: 0 },
+    Min: { totalGmv: 0, coveredGmv: 0 }
+  };
+  Object.keys(cityTotals).forEach(function(city) {
+    var tier = explicitTierCities[city] || 'Min'; // Tier 4 -> Min
+    tierTotals[tier].totalGmv += cityTotals[city].totalGmv;
+    tierTotals[tier].coveredGmv += cityTotals[city].coveredGmv;
+  });
+
+  var tiers = {};
+  Object.keys(tierTotals).forEach(function(tier) {
+    var t = tierTotals[tier];
+    tiers[tier] = {
+      totalGmv: t.totalGmv,
+      coveredGmv: t.coveredGmv,
+      pctGmvCovered: t.totalGmv ? t.coveredGmv / t.totalGmv : 0
+    };
+  });
+
   var generatedAt = new Date().toISOString();
   var statusSheet = ss.getSheetByName(DATA_PULL_STATUS_SHEET);
   if (statusSheet && statusSheet.getLastRow() >= 2) {
@@ -3437,8 +3471,36 @@ function getTrackerNationalGmvCoverage(sheetName) {
     coveredGmv: coveredGmv,
     totalGmv: totalGmv,
     pctGmvCoveredTop6: pctGmvCoveredTop6,
-    cities: cities
+    cities: cities,
+    tiers: tiers
   };
+}
+
+// Ultra/Max/Med/Min city groupings (Top3 strategic-importance tiers).
+// Min's own two cities are BZG/SZY; every other city not listed in
+// Ultra/Max/Med is "Tier 4" and gets folded into Min by the caller.
+var GMV_TIER_CITIES = {
+  Ultra: ['WAW'],
+  Max: ['KRA', 'WRO', 'POZ'],
+  Med: ['GDN', 'LOD', 'KTW', 'QLU', 'SZZ', 'QYY', 'RZE'],
+  Min: ['BZG', 'SZY']
+};
+
+// Get Ready for Christmas weekly GMV-in-promo targets, week 45 through 51
+// (decimal fractions, e.g. 0.59 = 59%). Source: Kasia's wk45-51 target
+// table. PL = total-Poland target; Ultra/Max/Med/Min match GMV_TIER_CITIES.
+var CHRISTMAS_WEEKLY_TARGETS = {
+  45: { PL: 0.59, Ultra: 0.62, Max: 0.60, Med: 0.57, Min: 0.55 },
+  46: { PL: 0.66, Ultra: 0.70, Max: 0.69, Med: 0.66, Min: 0.58 },
+  47: { PL: 0.66, Ultra: 0.70, Max: 0.69, Med: 0.66, Min: 0.58 },
+  48: { PL: 0.48, Ultra: 0.50, Max: 0.48, Med: 0.42, Min: 0.45 },
+  49: { PL: 0.48, Ultra: 0.50, Max: 0.48, Med: 0.42, Min: 0.45 },
+  50: { PL: 0.48, Ultra: 0.50, Max: 0.48, Med: 0.42, Min: 0.45 },
+  51: { PL: 0.40, Ultra: 0.40, Max: 0.365, Med: 0.32, Min: 0.43 }
+};
+
+function getChristmasWeeklyTargets() {
+  return CHRISTMAS_WEEKLY_TARGETS;
 }
 
 /**

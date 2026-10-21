@@ -1248,6 +1248,27 @@
 
   <div id="xmasNationalKpi"></div>
 
+  <div class="glovo-card p-4 flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">GMV vs Target</h3>
+      <p class="text-[10px] text-gray-500 mt-0.5">Total Poland + tier targets (Ultra/Max/Med/Min), per week of the campaign.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <label for="xmasTargetWeek" class="text-[10px] font-semibold text-gray-500 uppercase">Week</label>
+      <select id="xmasTargetWeek" onchange="renderChristmasTierVsTarget()" class="px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+        <option value="45">Week 45</option>
+        <option value="46">Week 46</option>
+        <option value="47" selected>Week 47</option>
+        <option value="48">Week 48</option>
+        <option value="49">Week 49</option>
+        <option value="50">Week 50</option>
+        <option value="51">Week 51</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="xmasTierVsTarget"></div>
+
   <div id="xmasKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2949,6 +2970,8 @@ function updateEditStartDateConstraint() {
             '<div class="text-[10px] text-red-100 mt-3">Christmas tracker + matching Master_Log promos. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
           '</div>';
         renderChristmasSummaryTable(res.cities || []);
+        christmasLastCoverage = res;
+        loadChristmasWeeklyTargets();
         return;
       }
 
@@ -2981,6 +3004,69 @@ function updateEditStartDateConstraint() {
           '<td class="px-3 py-2 text-right font-bold text-red-700">' + pct1(c.pctGmvCovered) + '</td>' +
           '</tr>';
       }).join('');
+    }
+
+    /* ========================================================= */
+    /* CHRISTMAS: GMV vs WEEKLY TARGET (PL / Ultra / Max / Med / Min) */
+    /* ========================================================= */
+
+    let christmasLastCoverage = null;
+    let christmasWeeklyTargets = null;
+
+    function loadChristmasWeeklyTargets() {
+      if (christmasWeeklyTargets) {
+        renderChristmasTierVsTarget();
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(targets) {
+          christmasWeeklyTargets = targets || {};
+          renderChristmasTierVsTarget();
+        })
+        .withFailureHandler(function(err) {
+          console.error('getChristmasWeeklyTargets error', err);
+        })
+        .getChristmasWeeklyTargets();
+    }
+
+    function renderChristmasTierVsTarget() {
+      const el = document.getElementById('xmasTierVsTarget');
+      if (!el) return;
+      if (!christmasLastCoverage || !christmasWeeklyTargets) return;
+
+      const week = document.getElementById('xmasTargetWeek').value;
+      const target = christmasWeeklyTargets[week];
+      if (!target) {
+        el.innerHTML = '<div class="text-xs text-gray-400">No target set for week ' + escapeHtml(week) + '.</div>';
+        return;
+      }
+
+      const res = christmasLastCoverage;
+      const tiers = res.tiers || {};
+      const rows = [
+        { label: 'PL (Total Poland)', actual: res.pctGmvCovered, target: target.PL },
+        { label: 'Ultra (WAW)', actual: tiers.Ultra ? tiers.Ultra.pctGmvCovered : 0, target: target.Ultra },
+        { label: 'Max (KRA/WRO/POZ)', actual: tiers.Max ? tiers.Max.pctGmvCovered : 0, target: target.Max },
+        { label: 'Med (GDN/LOD/KTW/QLU/SZZ/QYY/RZE)', actual: tiers.Med ? tiers.Med.pctGmvCovered : 0, target: target.Med },
+        { label: 'Min (BZG/SZY + Tier 4)', actual: tiers.Min ? tiers.Min.pctGmvCovered : 0, target: target.Min }
+      ];
+
+      el.innerHTML =
+        '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">' +
+        rows.map(function(r) {
+          const gap = r.actual - r.target;
+          const onTarget = gap >= 0;
+          const accent = onTarget ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50';
+          const gapColor = onTarget ? 'text-emerald-700' : 'text-red-700';
+          const gapText = (onTarget ? '+' : '') + (Math.round(gap * 1000) / 10) + ' pp vs target';
+          return '<div class="rounded-xl p-4 border-2 ' + accent + '">' +
+            '<div class="text-[10px] font-bold uppercase text-gray-500">' + escapeHtml(r.label) + '</div>' +
+            '<div class="text-2xl font-extrabold text-gray-900 mt-1">' + pct1(r.actual) + '</div>' +
+            '<div class="text-[10px] text-gray-500 mt-1">Target: ' + pct1(r.target) + '</div>' +
+            '<div class="text-xs font-bold mt-1 ' + gapColor + '">' + gapText + '</div>' +
+          '</div>';
+        }).join('') +
+        '</div>';
     }
 
 
