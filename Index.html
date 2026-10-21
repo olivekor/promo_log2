@@ -2128,8 +2128,15 @@ function updateEditStartDateConstraint() {
       const bppInput =
         document.getElementById('bppDiscount');
 
+      const standardInput =
+        document.getElementById('discount');
 
-      if (strategy === 'BPP') {
+      // Prime Exclusive is calculated the same way as BPP (uses BPP
+      // Discount, not Standard Discount) - the promo is only ever seen by
+      // Prime users, so Standard Discount doesn't apply and is locked to 0.
+      const isBppLike = strategy === 'BPP' || strategy === 'Prime Exclusive';
+
+      if (isBppLike) {
 
         bppInput.disabled = false;
 
@@ -2142,6 +2149,19 @@ function updateEditStartDateConstraint() {
         bppInput.value = '';
 
         bppInput.classList.add('bg-gray-100');
+
+      }
+
+      if (strategy === 'Prime Exclusive') {
+
+        standardInput.disabled = true;
+        standardInput.value = '0';
+        standardInput.classList.add('bg-gray-100');
+
+      } else {
+
+        standardInput.disabled = false;
+        standardInput.classList.remove('bg-gray-100');
 
       }
 
@@ -4787,11 +4807,20 @@ function openEditModalByRowIndex(rowIndex) {
 let fcProducts = [];
 
 function fcToggleBpp() {
-  const isBpp = document.getElementById('fcPromoStrategy').value === 'BPP';
-  const input = document.getElementById('fcBppDiscount');
-  input.disabled = !isBpp;
-  input.classList.toggle('bg-gray-100', !isBpp);
-  if (!isBpp) input.value = '';
+  const strategy = document.getElementById('fcPromoStrategy').value;
+  // Prime Exclusive is calculated the same way as BPP (uses BPP Discount,
+  // not Standard Discount) - Standard Discount is locked to 0 for it.
+  const isBppLike = strategy === 'BPP' || strategy === 'Prime Exclusive';
+  const bppInput = document.getElementById('fcBppDiscount');
+  bppInput.disabled = !isBppLike;
+  bppInput.classList.toggle('bg-gray-100', !isBppLike);
+  if (!isBppLike) bppInput.value = '';
+
+  const standardInput = document.getElementById('fcDiscount');
+  const isPrimeExclusive = strategy === 'Prime Exclusive';
+  standardInput.disabled = isPrimeExclusive;
+  standardInput.classList.toggle('bg-gray-100', isPrimeExclusive);
+  if (isPrimeExclusive) standardInput.value = '0';
 }
 
 function fcIsWholeMenuType(type) {
