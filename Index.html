@@ -2010,9 +2010,14 @@ function handlePromoPurposeChange() {
 
   if (!top3Option) return;
 
-  const isBTU = selectedPurposes.includes('Back to University');
+  // Top 3 test budget source is also used for TOP3 continuations tagged
+  // as "Always On" (not just new BTU promos) - the forecast math only
+  // checks budgetSource, not Promo Purpose, so this is a UI-only gate.
+  const isTop3Eligible =
+    selectedPurposes.includes('Back to University') ||
+    selectedPurposes.includes('Always on');
 
-  if (isBTU) {
+  if (isTop3Eligible) {
 
     top3Option.disabled = false;
     top3Option.textContent = 'Top 3 test';
@@ -2020,7 +2025,7 @@ function handlePromoPurposeChange() {
   } else {
 
     top3Option.disabled = true;
-    top3Option.textContent = 'Top 3 test (BTU only)';
+    top3Option.textContent = 'Top 3 test (BTU / Always on only)';
 
     if (budgetSelect.value === 'Top 3 test') {
       budgetSelect.value = 'BP Budget';
