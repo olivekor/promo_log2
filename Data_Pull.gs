@@ -24,7 +24,27 @@ var DATA_PULL_STATUS_SHEET = 'Data_Pull_Status';
 var DATA_PULL_PARTNER_AM_HEADER = 'Account Manager';
 var DATA_PULL_PARTNER_AM_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1zrTCU_2Vg5NSMM08nwUbLyxb_iAl-3NITt__JjCPDKE/edit?gid=1233870954#gid=1233870954';
 
-var DATA_PULL_PARTNERS_QUERY = `WITH stores AS (
+// Store IDs to force into Partners even though they don't yet have enough
+// BigQuery order history to pass the normal ">1 order" volume filter below
+// (e.g. a brand-new partner/virtual brand just added from a Partner Request,
+// like "Woda Klubopiekarnia" / 600658). They still need SOME order history
+// in the 180-day window to show up at all (the query can't invent orders
+// that were never recorded) — this only waives the minimum-volume check.
+// Remove an entry once the partner naturally qualifies on its own.
+var DATA_PULL_FORCE_INCLUDE_STORE_IDS = ['600658'];
+
+function dataPullBuildPartnersQuery_() {
+  var having = 'HAVING SUM(a.addr_daily_orders) > 0';
+  if (DATA_PULL_FORCE_INCLUDE_STORE_IDS.length) {
+    var idList = DATA_PULL_FORCE_INCLUDE_STORE_IDS.map(function(id) {
+      return "'" + String(id).replace(/'/g, "") + "'";
+    }).join(', ');
+    having += '\n    OR LOGICAL_OR(CAST(a.store_id AS STRING) IN (' + idList + '))';
+  }
+  return DATA_PULL_PARTNERS_QUERY_TEMPLATE.replace('__FORCE_INCLUDE_HAVING__', having);
+}
+
+var DATA_PULL_PARTNERS_QUERY_TEMPLATE = `WITH stores AS (
     SELECT DISTINCT
         CAST(store_id AS STRING) AS store_id,
         CASE
@@ -153,7 +173,7 @@ FROM last56_per_address a
 JOIN stores s ON a.store_id = s.store_id
 LEFT JOIN brand_segment bs ON s.store_name = bs.store_name
 GROUP BY 1, 2
-HAVING SUM(a.addr_daily_orders) > 1
+__FORCE_INCLUDE_HAVING__
 ORDER BY daily_gmv_eur DESC`;
 
 var DATA_PULL_MATRIX_QUERY = `WITH promo_definition AS (
@@ -737,10 +757,56 @@ function dataPullLog_(dataset, status, rowCount, message, jobId) {
   sheet.getRange(foundRow,4).setNumberFormat('yyyy-mm-dd hh:mm:ss');
 }
 
+var DATA_PULL_NATIONAL_GMV_SHEET = 'National_GMV';
+
+// Per-store average daily GMV for the WHOLE of Poland (no city filter),
+// last 56 days - same "sum per day, then average across days" shape as the
+// Partners baseline query above. This is the source of truth for the
+// seasonal trackers' "Total Poland GMV in Promo" KPI (getTrackerNationalGmvCoverage_
+// in Code.gs), which replaces computing % GMV only against partners already
+// sitting in a tracker.
+var DATA_PULL_NATIONAL_GMV_QUERY = `WITH daily AS (
+    SELECT
+        CAST(store_id AS STRING) AS store_id,
+        CAST(store_address_id AS STRING) AS store_address_id,
+        city_code,
+        p_creation_date AS d,
+        SUM(DH_GMV) AS gmv
+    FROM \`fulfillment-dwh-production.curated_data_shared_glovo.promos_okr__promos_okr_tracker_v2\`
+    WHERE country_code = 'PL'
+      AND segmentation <> 'Q-Commerce'
+      AND p_creation_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 56 DAY)
+      AND p_creation_date < CURRENT_DATE()
+    GROUP BY 1, 2, 3, 4
+)
+SELECT
+    store_id,
+    store_address_id,
+    ANY_VALUE(city_code) AS city_code,
+    ROUND(AVG(gmv), 2) AS avg_daily_gmv
+FROM daily
+GROUP BY 1, 2
+ORDER BY avg_daily_gmv DESC`;
+
+function refreshNationalGmv() {
+  var label = 'National_GMV';
+  try {
+    var result = dataPullRunBigQuery_(DATA_PULL_NATIONAL_GMV_QUERY, label);
+    dataPullWriteTable_(DATA_PULL_NATIONAL_GMV_SHEET, result);
+    dataPullLog_(label, 'SUCCESS', result.values.length, 'Total-Poland per-store GMV (56-day daily average) refreshed successfully.', result.jobId);
+    CacheService.getScriptCache().remove('PROMO_LOG_NATIONAL_GMV_SHEET');
+    Logger.log('National_GMV refreshed: ' + result.values.length + ' rows. Job: ' + result.jobId);
+    return {status:'SUCCESS', rows:result.values.length, jobId:result.jobId};
+  } catch (err) {
+    dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err));
+    throw err;
+  }
+}
+
 function refreshPartners() {
   var label = 'Partners';
   try {
-    var result = dataPullRunBigQuery_(DATA_PULL_PARTNERS_QUERY, label);
+    var result = dataPullRunBigQuery_(dataPullBuildPartnersQuery_(), label);
     var partnersSheet = dataPullWriteTable_(DATA_PULL_PARTNERS_SHEET, result);
     dataPullAddPartnerAMFormula_(partnersSheet, result);
     dataPullLog_(label, 'SUCCESS', result.values.length, 'Partners refreshed successfully. Account Manager is linked with XLOOKUP from the daily refreshed PL (adjusted to SMB) sheet.', result.jobId);
@@ -836,14 +902,15 @@ function dataPullDeleteMatrixCollect_() {
 function refreshAllReferenceData() {
   var partners = refreshPartners();
   var matrix = refreshMatrix();
-  return {partners: partners, matrix: matrix};
+  var nationalGmv = refreshNationalGmv();
+  return {partners: partners, matrix: matrix, nationalGmv: nationalGmv};
 }
 
 function setupDataPullTriggers() {
   var triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(function(trigger) {
     var fn = trigger.getHandlerFunction();
-    if (fn === 'refreshPartners' || fn === 'refreshMatrix') ScriptApp.deleteTrigger(trigger);
+    if (fn === 'refreshPartners' || fn === 'refreshMatrix' || fn === 'refreshNationalGmv') ScriptApp.deleteTrigger(trigger);
   });
 
   // Partners: every Monday around 05:00 (script timezone).
@@ -851,6 +918,15 @@ function setupDataPullTriggers() {
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.MONDAY)
     .atHour(5)
+    .create();
+
+  // National GMV: every Monday around 05:15 (script timezone) - offset from
+  // Partners so the two BigQuery pulls don't run at the exact same minute.
+  ScriptApp.newTrigger('refreshNationalGmv')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(5)
+    .nearMinute(15)
     .create();
 
   // Matrix: first day of every month around 05:00 (script timezone).
