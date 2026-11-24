@@ -3396,7 +3396,10 @@ function getTrackerNationalGmvCoverage(sheetName) {
     return hits;
   }
 
-  // 1. APPROVED Master_Log promos for this tracker's Promo Purpose.
+  // 1. APPROVED Master_Log promos running today - ANY Promo Purpose, not
+  //    just this tracker's: the KPI is "how much of our GMV is in promo
+  //    right now", so an Always On / Prime Week promo counts too. Only this
+  //    tracker's own promos are remembered as "ended" (for step 2).
   //    Store Address ID is 'ALL' for chain-wide promos (that's the default
   //    Create Promo writes) or a comma-separated list - previously both were
   //    used as one literal key, so KFC / McDonald's etc. were never counted.
@@ -3406,9 +3409,8 @@ function getTrackerNationalGmvCoverage(sheetName) {
     var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 11).getValues();
     masterRows.forEach(function(r) {
       var status = String(r[2] || '').trim().toUpperCase();
-      if (!promoPurposeIncludes_(r[6], def.promoPurpose)) return;
       if (!isPromoRunningToday_(r[9], r[10])) {
-        endedPromoIds[String(r[0] || '').trim()] = true;
+        if (promoPurposeIncludes_(r[6], def.promoPurpose)) endedPromoIds[String(r[0] || '').trim()] = true;
         return;
       }
       if (status !== 'APPROVED') return;

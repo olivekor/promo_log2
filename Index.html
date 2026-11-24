@@ -2972,7 +2972,7 @@ function updateEditStartDateConstraint() {
               '</div>' +
               '<div class="text-5xl ml-auto">🎄</div>' +
             '</div>' +
-            '<div class="text-[10px] text-red-100 mt-3">Christmas tracker + matching Master_Log promos. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
+            '<div class="text-[10px] text-red-100 mt-3">Christmas tracker + all approved Master_Log promos running today. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
           '</div>';
         renderChristmasSummaryTable(res.cities || []);
         christmasLastCoverage = res;
@@ -2992,7 +2992,7 @@ function updateEditStartDateConstraint() {
               '<div class="text-3xl font-extrabold text-gray-900 mt-1">' + pct1(res.pctGmvCoveredTop6) + '</div>' +
             '</div>' +
           '</div>' +
-          '<div class="text-[10px] text-gray-400 mt-3">' + cfg.sheetName + ' tracker + matching Master_Log promos. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
+          '<div class="text-[10px] text-gray-400 mt-3">' + cfg.sheetName + ' tracker + all approved Master_Log promos running today. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
         '</div>';
     }
 
