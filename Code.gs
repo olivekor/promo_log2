@@ -2909,7 +2909,9 @@ function getTracker_(sheetName) {
       r[6] == null ? '' : r[6]
     ).trim().toLowerCase();
 
-    if (!name || purpose !== promoPurpose) return;
+    // Promo Purpose is multi-select ("Get Ready for Christmas, Prime Week"),
+    // so match any of the listed purposes, not the whole string.
+    if (!name || !promoPurposeIncludes_(purpose, promoPurpose)) return;
 
     var status = String(
       r[2] == null ? '' : r[2]
@@ -3329,53 +3331,103 @@ function getTrackerNationalGmvCoverage(sheetName) {
   // Cities shown in the per-city breakdown: our 6 priority cities + KTW.
   var SUMMARY_CITIES = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO', 'KTW'];
 
-  // 1. Covered store_id + tracker partner counts per city (On promo? = Yes
-  //    only counts toward "covered" GMV; the partner count itself is every
-  //    row in the tracker for that city, regardless of status).
-  var coveredStoreIds = {};
-  var cityPartnerCounts = {};
-  var trackerSheet = ss.getSheetByName(sheetName);
-  if (trackerSheet && trackerSheet.getLastRow() >= 2) {
-    var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 7).getValues();
-    trackerRows.forEach(function(r) {
-      var city = String(r[0] || '').trim().toUpperCase();
-      var storeId = String(r[2] || '').trim();
-      var onPromo = String(r[6] || '').trim().toLowerCase();
-      if (city) cityPartnerCounts[city] = (cityPartnerCounts[city] || 0) + 1;
-      if (storeId && onPromo === 'yes') coveredStoreIds[storeId] = true;
-    });
-  }
+  // 0. Index National_GMV so ids typed into the tracker / Master_Log can be
+  //    resolved whether they are a store_id or a store_address_id.
+  var knownStoreIds = {};    // store_id -> city
+  var knownAddrIds = {};     // store_address_id -> true
+  gmvRows.forEach(function(r) {
+    var sid = String(r[0] || '').trim();
+    var aid = String(r[1] || '').trim();
+    if (sid) knownStoreIds[sid] = String(r[2] || '').trim().toUpperCase();
+    if (aid) knownAddrIds[aid] = true;
+  });
 
-  // 2. Name -> store_id list, for Master_Log rows with no Store Address ID.
+  // Name -> store_id list (Partners!M, every city), used whenever a tracker
+  // row / Master_Log row has no usable id of its own.
   var nameToStoreIds = {};
   var partnersSheet = ss.getSheetByName(PARTNERS_REFERENCE_SHEET);
   if (partnersSheet && partnersSheet.getLastRow() >= 2) {
     var pRows = partnersSheet.getRange(2, 1, partnersSheet.getLastRow() - 1, 13).getValues();
     pRows.forEach(function(r) {
-      var key = normalizeBTUName_(r[0]);
-      var ids = String(r[12] || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+      var key = normalizeTrackerNameKey_(r[0]);
+      var ids = splitTrackerIds_(r[12]);
       if (key && ids.length) nameToStoreIds[key] = ids;
     });
   }
 
-  // 3. Covered Master_Log rows (APPROVED, matching this tracker's Promo Purpose).
+  var coveredStoreIds = {};
   var coveredAddrIds = {};
+  var unresolved = []; // diagnostics: covered partners we couldn't map to any GMV
+
+  // Marks a list of typed ids as covered. Each token may be a store_id or a
+  // store_address_id. Returns how many tokens matched National_GMV.
+  function coverIds_(ids) {
+    var hits = 0;
+    ids.forEach(function(id) {
+      if (knownAddrIds[id]) { coveredAddrIds[id] = true; hits++; }
+      if (knownStoreIds[id] !== undefined) { coveredStoreIds[id] = true; hits++; }
+    });
+    return hits;
+  }
+
+  // Marks every store_id of a partner (by name) as covered, optionally
+  // only in one city. Returns how many store_ids were covered.
+  function coverByName_(name, city) {
+    var hits = 0;
+    (nameToStoreIds[normalizeTrackerNameKey_(name)] || []).forEach(function(id) {
+      if (knownStoreIds[id] === undefined) return;
+      if (city && knownStoreIds[id] !== city) return;
+      coveredStoreIds[id] = true;
+      hits++;
+    });
+    return hits;
+  }
+
+  // 1. APPROVED Master_Log promos for this tracker's Promo Purpose.
+  //    Store Address ID is 'ALL' for chain-wide promos (that's the default
+  //    Create Promo writes) or a comma-separated list - previously both were
+  //    used as one literal key, so KFC / McDonald's etc. were never counted.
   var master = ss.getSheetByName('Master_Log');
   if (master && master.getLastRow() >= 2) {
     var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 7).getValues();
     masterRows.forEach(function(r) {
       var status = String(r[2] || '').trim().toUpperCase();
       if (status !== 'APPROVED' || !promoPurposeIncludes_(r[6], def.promoPurpose)) return;
-      var addrId = String(r[5] || '').trim();
-      if (addrId) {
-        coveredAddrIds[addrId] = true;
-      } else {
-        var nameKey = normalizeBTUName_(r[4]);
-        (nameToStoreIds[nameKey] || []).forEach(function(id) { coveredStoreIds[id] = true; });
-      }
+      var name = r[4];
+      var rawAddr = String(r[5] || '').trim();
+      var tokens = splitTrackerIds_(rawAddr);
+      var isAll = !tokens.length || tokens.some(function(t) { return t.toUpperCase() === 'ALL'; });
+      var hits = isAll ? coverByName_(name) : coverIds_(tokens);
+      if (!hits && !isAll) hits = coverByName_(name); // typo'd / stale ids -> whole partner
+      if (!hits) unresolved.push({ source: 'Master_Log', id: String(r[0] || ''), name: String(name || ''), storeAddressId: rawAddr });
     });
   }
 
+  // 2. Tracker rows with "On promo? = Yes" typed in the sheet (approved
+  //    Master_Log promos were already covered above). Store ID may be a
+  //    list; if it's blank / unknown, fall back to the partner's store_ids
+  //    in that row's city.
+  //    Partner counts per city include every row regardless of status.
+  var cityPartnerCounts = {};
+  var trackerSheet = ss.getSheetByName(sheetName);
+  if (trackerSheet && trackerSheet.getLastRow() >= 2) {
+    var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 7).getValues();
+    trackerRows.forEach(function(r) {
+      var city = String(r[0] || '').trim().toUpperCase();
+      var name = r[1];
+      var onPromo = String(r[6] || '').trim().toLowerCase();
+      if (city) cityPartnerCounts[city] = (cityPartnerCounts[city] || 0) + 1;
+      if (onPromo !== 'yes' && onPromo !== 'tak') return;
+      var hits = coverIds_(splitTrackerIds_(r[2]));
+      if (!hits) hits = coverByName_(name, city);
+      if (!hits) unresolved.push({ source: sheetName, city: city, name: String(name || ''), storeId: String(r[2] || '') });
+    });
+  }
+
+  if (unresolved.length) {
+    Logger.log('getTrackerNationalGmvCoverage(' + sheetName + '): ' + unresolved.length +
+      ' covered partner(s) with no GMV match: ' + JSON.stringify(unresolved.slice(0, 200)));
+  }
   var totalGmv = 0;
   var coveredGmv = 0;
   var cityTotals = {};
@@ -3472,8 +3524,46 @@ function getTrackerNationalGmvCoverage(sheetName) {
     totalGmv: totalGmv,
     pctGmvCoveredTop6: pctGmvCoveredTop6,
     cities: cities,
-    tiers: tiers
+    tiers: tiers,
+    unresolvedCount: unresolved.length,
+    unresolved: unresolved.slice(0, 50)
   };
+}
+
+// Looser partner-name key for matching Master_Log / tracker names to the
+// Partners sheet: case, curly vs straight apostrophes and repeated spaces
+// don't matter ("McDonald’s" == "mcdonald's").
+function normalizeTrackerNameKey_(v) {
+  return String(v == null ? '' : v)
+    .replace(/[\u2018\u2019\u02BC`´]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+// "123, 456;789" -> ['123', '456', '789']. Numbers from the sheet come
+// back as Number, so stringify first.
+function splitTrackerIds_(v) {
+  return String(v == null ? '' : v)
+    .split(/[,;\s]+/)
+    .map(function(s) { return s.trim().replace(/\.0+$/, ''); })
+    .filter(Boolean);
+}
+
+/**
+ * Run from the Apps Script editor to see why "Total Poland GMV in Promo"
+ * looks low: logs the covered/total GMV and every approved promo / "Yes"
+ * tracker row that couldn't be matched to any store in National_GMV
+ * (wrong Store ID, partner name not in Partners, etc.).
+ */
+function debugChristmasGmvCoverage() {
+  var res = getTrackerNationalGmvCoverage('Christmas');
+  Logger.log('PL: ' + (res.pctGmvCovered * 100).toFixed(1) + '% (' +
+    Math.round(res.coveredGmv) + ' / ' + Math.round(res.totalGmv) + ')' +
+    ', top6: ' + (res.pctGmvCoveredTop6 * 100).toFixed(1) + '%');
+  Logger.log('Unresolved: ' + res.unresolvedCount);
+  (res.unresolved || []).forEach(function(u) { Logger.log(JSON.stringify(u)); });
+  return res;
 }
 
 // Ultra/Max/Med/Min city groupings (Top3 strategic-importance tiers).
