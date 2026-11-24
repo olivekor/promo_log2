@@ -2960,6 +2960,9 @@ function updateEditStartDateConstraint() {
 
       if (festive) {
         christmasLastCoverage = res;
+        // Weekly actuals + targets now come in this same response.
+        if (res.weeklyActual) christmasWeeklyActual = res.weeklyActual;
+        if (res.weeklyTargets) christmasWeeklyTargets = res.weeklyTargets;
         renderChristmasBannerAndSummary();
         loadChristmasWeeklyTargets();
         return;

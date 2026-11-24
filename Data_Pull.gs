@@ -995,12 +995,13 @@ function setupDataPullTriggers() {
     .nearMinute(15)
     .create();
 
-  // Actual weekly GMV in promo: every day around 06:00 (yesterday's data is
-  // in promos_okr_tracker_v2 by then).
+  // Actual weekly GMV in promo: once a day, between 08:00 and 09:00 (Apps
+  // Script runs "atHour(8)" at some minute in that hour), so the numbers are
+  // ready by 9 am. The web app only reads the resulting sheet.
   ScriptApp.newTrigger('refreshWeeklyPromoGmv')
     .timeBased()
     .everyDays(1)
-    .atHour(6)
+    .atHour(8)
     .create();
 
   // Matrix: first day of every month around 05:00 (script timezone).

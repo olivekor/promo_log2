@@ -3549,8 +3549,22 @@ function getTrackerNationalGmvCoverage(sheetName) {
     cities: cities,
     tiers: tiers,
     unresolvedCount: unresolved.length,
-    unresolved: unresolved.slice(0, 50)
+    unresolved: unresolved.slice(0, 50),
+    // Christmas only: ACTUAL weekly numbers (read from the Weekly_Promo_GMV
+    // sheet the daily trigger fills - no BigQuery call here) + targets, sent
+    // in this same response so the page doesn't need separate calls.
+    weeklyActual: sheetName === 'Christmas' ? safeWeeklyActualPromoGmv_() : null,
+    weeklyTargets: sheetName === 'Christmas' ? CHRISTMAS_WEEKLY_TARGETS : null
   };
+}
+
+function safeWeeklyActualPromoGmv_() {
+  try {
+    return getWeeklyActualPromoGmv();
+  } catch (e) {
+    Logger.log('getWeeklyActualPromoGmv failed: ' + e);
+    return { basis: WEEKLY_PROMO_GMV_BASIS, dataUntil: null, weeks: {}, error: String(e && e.message ? e.message : e) };
+  }
 }
 
 // True while a promo is live today (start <= today <= end, in the
