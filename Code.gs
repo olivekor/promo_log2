@@ -3351,7 +3351,9 @@ function getTrackerNationalGmvCoverage(sheetName) {
     pRows.forEach(function(r) {
       var key = normalizeTrackerNameKey_(r[0]);
       var ids = splitTrackerIds_(r[12]);
-      if (key && ids.length) nameToStoreIds[key] = ids;
+      // Partners groups by exact store_name, so "THAISTY" and "Thaisty" are
+      // two rows with the same key - merge their ids, don't overwrite.
+      if (key && ids.length) nameToStoreIds[key] = (nameToStoreIds[key] || []).concat(ids);
     });
   }
 
