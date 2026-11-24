@@ -3048,24 +3048,42 @@ function updateEditStartDateConstraint() {
         })
         .withFailureHandler(function(err) {
           console.error('getChristmasWeeklyTargets error', err);
+          const tierEl = document.getElementById('xmasTierVsTarget');
+          if (tierEl) tierEl.innerHTML = '<div class="text-xs text-red-600">Could not load weekly targets: ' +
+            escapeHtml(err && err.message ? err.message : String(err)) + '</div>';
         })
         .getChristmasWeeklyTargets();
+      const tierEl = document.getElementById('xmasTierVsTarget');
+      if (tierEl && !tierEl.innerHTML.trim()) {
+        tierEl.innerHTML = '<div class="text-xs text-gray-400">Loading weekly GMV in promo…</div>';
+      }
       google.script.run
-        .withSuccessHandler(function(actual) {
-          christmasWeeklyActual = actual || { weeks: {} };
+        .withSuccessHandler(function(json) {
+          let actual = null;
+          try { actual = typeof json === 'string' ? JSON.parse(json) : json; } catch (e) { console.error(e); }
+          christmasWeeklyActual = actual || { weeks: {}, error: 'empty response' };
           renderChristmasTierVsTarget();
         })
         .withFailureHandler(function(err) {
-          console.error('getWeeklyActualPromoGmv error', err);
-          christmasWeeklyActual = { weeks: {} };
+          console.error('getWeeklyActualPromoGmvJson error', err);
+          christmasWeeklyActual = { weeks: {}, error: err && err.message ? err.message : String(err) };
           renderChristmasTierVsTarget();
         })
-        .getWeeklyActualPromoGmv();
+        .getWeeklyActualPromoGmvJson();
     }
 
     function renderChristmasTierVsTarget() {
       const el = document.getElementById('xmasTierVsTarget');
       if (!el) return;
+      try {
+        renderChristmasTierVsTargetInner_(el);
+      } catch (e) {
+        console.error('renderChristmasTierVsTarget', e);
+        el.innerHTML = '<div class="text-xs text-red-600">GMV vs Target failed to render: ' + escapeHtml(e.message) + '</div>';
+      }
+    }
+
+    function renderChristmasTierVsTargetInner_(el) {
       if (!christmasLastCoverage || !christmasWeeklyTargets) return;
 
       const week = document.getElementById('xmasTargetWeek').value;
@@ -3107,7 +3125,8 @@ function updateEditStartDateConstraint() {
           { label: 'Min (BZG/SZY + Tier 4)', actual: tiers.Min ? tiers.Min.pctGmvCovered : 0, target: target.Min }
         ];
         note = 'PLAN - no BigQuery data for week ' + escapeHtml(week) +
-          ' yet; showing approved Master_Log promos running today.';
+          ' yet; showing approved Master_Log promos running today.' +
+          (christmasWeeklyActual.error ? ' (Weekly_Promo_GMV error: ' + escapeHtml(christmasWeeklyActual.error) + ')' : '');
       }
 
       el.innerHTML =

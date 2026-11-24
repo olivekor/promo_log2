@@ -3702,6 +3702,12 @@ function getWeeklyActualPromoGmv() {
   return out;
 }
 
+// Web-app endpoint: returns JSON text so google.script.run can't silently
+// drop the payload (it returns null for values it can't serialize).
+function getWeeklyActualPromoGmvJson() {
+  return JSON.stringify(getWeeklyActualPromoGmv());
+}
+
 /**
  * Run from the editor to compare with the "GRFC GMV IN PROMO" file: logs
  * both rules for every week so you can see which one matches their H2.
