@@ -2959,23 +2959,8 @@ function updateEditStartDateConstraint() {
       }
 
       if (festive) {
-        el.innerHTML =
-          '<div class="rounded-2xl p-6 shadow-lg text-white" style="background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 55%, #15803d 100%);">' +
-            '<div class="flex items-center justify-between flex-wrap gap-6">' +
-              '<div>' +
-                '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">🎁 Total Poland GMV in Promo</div>' +
-                '<div class="text-4xl font-extrabold mt-1">' + pct1(res.pctGmvCovered) + '</div>' +
-              '</div>' +
-              '<div class="border-l border-white/30 pl-6">' +
-                '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">Top 6 Cities</div>' +
-                '<div class="text-4xl font-extrabold mt-1">' + pct1(res.pctGmvCoveredTop6) + '</div>' +
-              '</div>' +
-              '<div class="text-5xl ml-auto">🎄</div>' +
-            '</div>' +
-            '<div class="text-[10px] text-red-100 mt-3">Christmas tracker + all approved Master_Log promos running today. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
-          '</div>';
-        renderChristmasSummaryTable(res.cities || []);
         christmasLastCoverage = res;
+        renderChristmasBannerAndSummary();
         loadChristmasWeeklyTargets();
         return;
       }
@@ -2994,6 +2979,57 @@ function updateEditStartDateConstraint() {
           '</div>' +
           '<div class="text-[10px] text-gray-400 mt-3">' + cfg.sheetName + ' tracker + all approved Master_Log promos running today. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.</div>' +
         '</div>';
+    }
+
+    // Christmas banner + Summary table. For a week with BigQuery data
+    // (Weekly_Promo_GMV) they show the ACTUAL % GMV in promo of the week
+    // picked in "GMV vs Target"; otherwise the Master_Log plan.
+    function renderChristmasBannerAndSummary() {
+      const res = christmasLastCoverage;
+      const el = document.getElementById(TRACKER_CONFIG.christmas.idPrefix + 'NationalKpi');
+      if (!res || !el) return;
+      const sel = document.getElementById('xmasTargetWeek');
+      const week = sel ? sel.value : '';
+      const actualWeek = christmasWeeklyActual && christmasWeeklyActual.weeks
+        ? christmasWeeklyActual.weeks[week] : null;
+
+      let pl, top6, caption;
+      if (actualWeek) {
+        pl = actualWeek.PL ? actualWeek.PL.pctGmvInPromo : 0;
+        top6 = actualWeek.top6 ? actualWeek.top6.pctGmvInPromo : 0;
+        caption = 'ACTUAL week ' + escapeHtml(week) + ' (from ' + escapeHtml(actualWeek.weekStart || '') + ')' +
+          (christmasWeeklyActual.dataUntil ? ', data until ' + escapeHtml(christmasWeeklyActual.dataUntil) : '') +
+          ' - BigQuery, Food, brand level. Plan from Master_Log (approved promos running today): ' +
+          pct1(res.pctGmvCovered) + ' PL / ' + pct1(res.pctGmvCoveredTop6) + ' Top 6.';
+      } else {
+        pl = res.pctGmvCovered;
+        top6 = res.pctGmvCoveredTop6;
+        caption = (christmasWeeklyActual ? 'PLAN - no BigQuery data for week ' + escapeHtml(week) + '. ' : 'Loading actual weekly GMV… ') +
+          'Christmas tracker + all approved Master_Log promos running today. Updated ' + new Date(res.generatedAt).toLocaleDateString() + '.';
+      }
+
+      el.innerHTML =
+        '<div class="rounded-2xl p-6 shadow-lg text-white" style="background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 55%, #15803d 100%);">' +
+          '<div class="flex items-center justify-between flex-wrap gap-6">' +
+            '<div>' +
+              '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">🎁 Total Poland GMV in Promo</div>' +
+              '<div class="text-4xl font-extrabold mt-1">' + pct1(pl) + '</div>' +
+            '</div>' +
+            '<div class="border-l border-white/30 pl-6">' +
+              '<div class="text-xs font-bold uppercase tracking-wide text-amber-200">Top 6 Cities</div>' +
+              '<div class="text-4xl font-extrabold mt-1">' + pct1(top6) + '</div>' +
+            '</div>' +
+            '<div class="text-5xl ml-auto">🎄</div>' +
+          '</div>' +
+          '<div class="text-[10px] text-red-100 mt-3">' + caption + '</div>' +
+        '</div>';
+
+      const cities = (res.cities || []).map(function(c) {
+        if (!actualWeek || !actualWeek.cities) return c;
+        const v = actualWeek.cities[c.city];
+        return Object.assign({}, c, { pctGmvCovered: v == null ? 0 : v });
+      });
+      renderChristmasSummaryTable(cities);
     }
 
     // Christmas-only Summary: City | Partners | % GMV in Promo, for our 6
@@ -3076,6 +3112,7 @@ function updateEditStartDateConstraint() {
       const el = document.getElementById('xmasTierVsTarget');
       if (!el) return;
       try {
+        renderChristmasBannerAndSummary();
         renderChristmasTierVsTargetInner_(el);
       } catch (e) {
         console.error('renderChristmasTierVsTarget', e);

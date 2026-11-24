@@ -3671,13 +3671,18 @@ function getWeeklyActualPromoGmv() {
     if (!acc[week]) {
       acc[week] = {
         weekStart: r[0] instanceof Date ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[0] || ''),
-        PL: bucket(), top6: bucket(), Ultra: bucket(), Max: bucket(), Med: bucket(), Min: bucket()
+        PL: bucket(), top6: bucket(), Ultra: bucket(), Max: bucket(), Med: bucket(), Min: bucket(),
+        cities: {}
       };
     }
     var w = acc[week];
     add(w.PL, total, partner, any);
     if (TOP6[city]) add(w.top6, total, partner, any);
     add(w[tierOf[city] || 'Min'], total, partner, any); // Tier 4 -> Min
+    if (city) {
+      if (!w.cities[city]) w.cities[city] = bucket();
+      add(w.cities[city], total, partner, any);
+    }
     var until = r[6] instanceof Date ? Utilities.formatDate(r[6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[6] || '');
     if (until && (!out.dataUntil || until > out.dataUntil)) out.dataUntil = until;
   });
@@ -3696,6 +3701,12 @@ function getWeeklyActualPromoGmv() {
         pctPartnerFunded: pctPartner,
         pctAnyDiscount: pctAny
       };
+    });
+    res.cities = {};
+    Object.keys(w.cities).forEach(function(city) {
+      var c = w.cities[city];
+      var promo = WEEKLY_PROMO_GMV_BASIS === 'any_discount' ? c.anyGmv : c.partnerGmv;
+      res.cities[city] = c.totalGmv ? promo / c.totalGmv : 0;
     });
     out.weeks[week] = res;
   });
