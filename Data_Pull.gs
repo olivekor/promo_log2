@@ -803,6 +803,71 @@ function refreshNationalGmv() {
   }
 }
 
+var DATA_PULL_WEEKLY_PROMO_GMV_SHEET = 'Weekly_Promo_GMV';
+
+// ACTUAL "% GMV in promo" per ISO week and city, last 8 weeks (current week
+// = Monday..yesterday). Same definition as the team's "GRFC GMV IN PROMO"
+// file (promos_okr_tracker_v2, Food vertical, PL via geography__cities_v2,
+// grouped by brand = store_name): a brand is "in promo" in a week if it
+// had promotool discounts anywhere in PL that week, and then ALL of its GMV
+// that week counts. Two variants, so the app can follow either rule:
+//   gmv_in_promo_partner_funded - brand had partner-funded discounts > 0
+//   gmv_in_promo_any_discount   - brand had any promotool discounts > 0
+var DATA_PULL_WEEKLY_PROMO_GMV_QUERY = `WITH base AS (
+    SELECT
+        DATE_TRUNC(t.p_creation_date, WEEK(MONDAY)) AS week_start,
+        COALESCE(t.store_name, '') AS store_name,
+        t.city_code,
+        COALESCE(SUM(t.DH_GMV), 0) AS gmv,
+        COALESCE(SUM(t.total_promotool_discounts_partner_funded), 0) AS disc_partner,
+        COALESCE(SUM(t.total_promotool_discounts), 0) AS disc_all
+    FROM \`fulfillment-dwh-production.curated_data_shared_glovo.promos_okr__promos_okr_tracker_v2\` AS t
+    LEFT JOIN \`fulfillment-dwh-production.curated_data_shared_glovo.geography__cities_v2\` AS c
+        ON t.city_code = c.city_code
+    WHERE c.country_code = 'PL'
+      AND t.vertical = 'Food'
+      AND t.p_creation_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(MONDAY)), INTERVAL 7 WEEK)
+      AND t.p_creation_date < CURRENT_DATE()
+    GROUP BY 1, 2, 3
+),
+brand AS (
+    SELECT
+        week_start,
+        store_name,
+        SUM(disc_partner) > 0 AS promo_partner,
+        SUM(disc_all) > 0 AS promo_any
+    FROM base
+    GROUP BY 1, 2
+)
+SELECT
+    FORMAT_DATE('%Y-%m-%d', b.week_start) AS week_start,
+    EXTRACT(ISOWEEK FROM b.week_start) AS iso_week,
+    b.city_code,
+    ROUND(SUM(b.gmv), 2) AS gmv_total,
+    ROUND(SUM(IF(br.promo_partner, b.gmv, 0)), 2) AS gmv_in_promo_partner_funded,
+    ROUND(SUM(IF(br.promo_any, b.gmv, 0)), 2) AS gmv_in_promo_any_discount,
+    FORMAT_DATE('%Y-%m-%d', MAX(DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))) AS data_until
+FROM base b
+JOIN brand br
+    ON b.week_start = br.week_start
+   AND b.store_name = br.store_name
+GROUP BY 1, 2, 3
+ORDER BY 1, 3`;
+
+function refreshWeeklyPromoGmv() {
+  var label = 'Weekly_Promo_GMV';
+  try {
+    var result = dataPullRunBigQuery_(DATA_PULL_WEEKLY_PROMO_GMV_QUERY, label);
+    dataPullWriteTable_(DATA_PULL_WEEKLY_PROMO_GMV_SHEET, result);
+    dataPullLog_(label, 'SUCCESS', result.values.length, 'Actual weekly GMV in promo (Food, PL, brand level) refreshed successfully.', result.jobId);
+    Logger.log('Weekly_Promo_GMV refreshed: ' + result.values.length + ' rows. Job: ' + result.jobId);
+    return {status:'SUCCESS', rows:result.values.length, jobId:result.jobId};
+  } catch (err) {
+    dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err));
+    throw err;
+  }
+}
+
 function refreshPartners() {
   var label = 'Partners';
   try {
@@ -903,14 +968,15 @@ function refreshAllReferenceData() {
   var partners = refreshPartners();
   var matrix = refreshMatrix();
   var nationalGmv = refreshNationalGmv();
-  return {partners: partners, matrix: matrix, nationalGmv: nationalGmv};
+  var weeklyPromoGmv = refreshWeeklyPromoGmv();
+  return {partners: partners, matrix: matrix, nationalGmv: nationalGmv, weeklyPromoGmv: weeklyPromoGmv};
 }
 
 function setupDataPullTriggers() {
   var triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(function(trigger) {
     var fn = trigger.getHandlerFunction();
-    if (fn === 'refreshPartners' || fn === 'refreshMatrix' || fn === 'refreshNationalGmv') ScriptApp.deleteTrigger(trigger);
+    if (fn === 'refreshPartners' || fn === 'refreshMatrix' || fn === 'refreshNationalGmv' || fn === 'refreshWeeklyPromoGmv') ScriptApp.deleteTrigger(trigger);
   });
 
   // Partners: every Monday around 05:00 (script timezone).
@@ -929,6 +995,14 @@ function setupDataPullTriggers() {
     .nearMinute(15)
     .create();
 
+  // Actual weekly GMV in promo: every day around 06:00 (yesterday's data is
+  // in promos_okr_tracker_v2 by then).
+  ScriptApp.newTrigger('refreshWeeklyPromoGmv')
+    .timeBased()
+    .everyDays(1)
+    .atHour(6)
+    .create();
+
   // Matrix: first day of every month around 05:00 (script timezone).
   ScriptApp.newTrigger('refreshMatrix')
     .timeBased()
@@ -936,7 +1010,7 @@ function setupDataPullTriggers() {
     .atHour(5)
     .create();
 
-  Logger.log('Data Pull triggers created: Partners weekly + Matrix monthly.');
+  Logger.log('Data Pull triggers created: Partners + National GMV weekly, Weekly Promo GMV daily, Matrix monthly.');
 }
 
 function dataPullStatus() {

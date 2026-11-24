@@ -3628,6 +3628,96 @@ function getChristmasWeeklyTargets() {
   return CHRISTMAS_WEEKLY_TARGETS;
 }
 
+// Which brand-level rule decides "in promo" for the ACTUAL weekly numbers
+// (see DATA_PULL_WEEKLY_PROMO_GMV_QUERY in Data_Pull.gs):
+//   'partner_funded' - brand had partner-funded discounts that week
+//   'any_discount'   - brand had any promotool discounts that week
+// Set to whichever matches the team's "GRFC GMV IN PROMO" file.
+var WEEKLY_PROMO_GMV_BASIS = 'partner_funded';
+
+/**
+ * ACTUAL % GMV in promo per ISO week, from the "Weekly_Promo_GMV" sheet
+ * (Data_Pull.gs refreshWeeklyPromoGmv(), daily). Returns
+ *   { basis, dataUntil, weeks: { 48: { weekStart, PL, top6, Ultra, Max, Med, Min } } }
+ * where each bucket is { totalGmv, promoGmv, pctGmvInPromo, pctPartnerFunded, pctAnyDiscount }.
+ */
+function getWeeklyActualPromoGmv() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Weekly_Promo_GMV');
+  var out = { basis: WEEKLY_PROMO_GMV_BASIS, dataUntil: null, weeks: {} };
+  if (!sheet || sheet.getLastRow() < 2) return out;
+
+  // week_start, iso_week, city_code, gmv_total, gmv_in_promo_partner_funded,
+  // gmv_in_promo_any_discount, data_until
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues();
+
+  var tierOf = {};
+  ['Ultra', 'Max', 'Med', 'Min'].forEach(function(tier) {
+    GMV_TIER_CITIES[tier].forEach(function(city) { tierOf[city] = tier; });
+  });
+  var TOP6 = { WAW: 1, KRA: 1, GDN: 1, LOD: 1, POZ: 1, WRO: 1 };
+
+  function bucket() { return { totalGmv: 0, partnerGmv: 0, anyGmv: 0 }; }
+  function add(b, total, partner, any) { b.totalGmv += total; b.partnerGmv += partner; b.anyGmv += any; }
+
+  var acc = {};
+  rows.forEach(function(r) {
+    var week = toNumber_(r[1]);
+    if (!week) return;
+    var city = String(r[2] || '').trim().toUpperCase();
+    var total = toNumber_(r[3]) || 0;
+    var partner = toNumber_(r[4]) || 0;
+    var any = toNumber_(r[5]) || 0;
+    if (!acc[week]) {
+      acc[week] = {
+        weekStart: r[0] instanceof Date ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[0] || ''),
+        PL: bucket(), top6: bucket(), Ultra: bucket(), Max: bucket(), Med: bucket(), Min: bucket()
+      };
+    }
+    var w = acc[week];
+    add(w.PL, total, partner, any);
+    if (TOP6[city]) add(w.top6, total, partner, any);
+    add(w[tierOf[city] || 'Min'], total, partner, any); // Tier 4 -> Min
+    var until = r[6] instanceof Date ? Utilities.formatDate(r[6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[6] || '');
+    if (until && (!out.dataUntil || until > out.dataUntil)) out.dataUntil = until;
+  });
+
+  Object.keys(acc).forEach(function(week) {
+    var w = acc[week];
+    var res = { weekStart: w.weekStart };
+    ['PL', 'top6', 'Ultra', 'Max', 'Med', 'Min'].forEach(function(k) {
+      var b = w[k];
+      var pctPartner = b.totalGmv ? b.partnerGmv / b.totalGmv : 0;
+      var pctAny = b.totalGmv ? b.anyGmv / b.totalGmv : 0;
+      res[k] = {
+        totalGmv: b.totalGmv,
+        promoGmv: WEEKLY_PROMO_GMV_BASIS === 'any_discount' ? b.anyGmv : b.partnerGmv,
+        pctGmvInPromo: WEEKLY_PROMO_GMV_BASIS === 'any_discount' ? pctAny : pctPartner,
+        pctPartnerFunded: pctPartner,
+        pctAnyDiscount: pctAny
+      };
+    });
+    out.weeks[week] = res;
+  });
+  return out;
+}
+
+/**
+ * Run from the editor to compare with the "GRFC GMV IN PROMO" file: logs
+ * both rules for every week so you can see which one matches their H2.
+ */
+function debugWeeklyActualPromoGmv() {
+  var res = getWeeklyActualPromoGmv();
+  Logger.log('Basis in use: ' + res.basis + ', data until ' + res.dataUntil);
+  Object.keys(res.weeks).sort().forEach(function(week) {
+    var w = res.weeks[week];
+    Logger.log('Week ' + week + ' (' + w.weekStart + '): PL partner-funded ' +
+      (w.PL.pctPartnerFunded * 100).toFixed(1) + '% | PL any discount ' +
+      (w.PL.pctAnyDiscount * 100).toFixed(1) + '% | total GMV ' + Math.round(w.PL.totalGmv));
+  });
+  return res;
+}
+
 /**
  * One-time backfill: fills blank GMV Weight (BTU!D) for BTU rows whose
  * Store ID (BTU!C) matches a "sid" in the "gmv data" sheet (C = sid,

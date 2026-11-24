@@ -1251,14 +1251,14 @@
   <div class="glovo-card p-4 flex items-center justify-between flex-wrap gap-3">
     <div>
       <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider">GMV vs Target</h3>
-      <p class="text-[10px] text-gray-500 mt-0.5">Total Poland + tier targets (Ultra/Max/Med/Min), per week of the campaign.</p>
+      <p class="text-[10px] text-gray-500 mt-0.5">Total Poland + tier targets (Ultra/Max/Med/Min), per week of the campaign. Past/current weeks = actual GMV from BigQuery; future weeks = plan from Master_Log.</p>
     </div>
     <div class="flex items-center gap-2">
       <label for="xmasTargetWeek" class="text-[10px] font-semibold text-gray-500 uppercase">Week</label>
       <select id="xmasTargetWeek" onchange="renderChristmasTierVsTarget()" class="px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
         <option value="45">Week 45</option>
         <option value="46">Week 46</option>
-        <option value="47" selected>Week 47</option>
+        <option value="47">Week 47</option>
         <option value="48">Week 48</option>
         <option value="49">Week 49</option>
         <option value="50">Week 50</option>
@@ -3017,9 +3017,27 @@ function updateEditStartDateConstraint() {
 
     let christmasLastCoverage = null;
     let christmasWeeklyTargets = null;
+    let christmasWeeklyActual = null; // { basis, dataUntil, weeks: { 48: {...} } }
+    let christmasWeekPicked = false;
+
+    // ISO-8601 week number of a date (weeks start Monday).
+    function isoWeekOf(d) {
+      const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const day = t.getUTCDay() || 7;
+      t.setUTCDate(t.getUTCDate() + 4 - day);
+      const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+      return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
+    }
 
     function loadChristmasWeeklyTargets() {
-      if (christmasWeeklyTargets) {
+      // Default the week picker to the current week (once per page load).
+      if (!christmasWeekPicked) {
+        const sel = document.getElementById('xmasTargetWeek');
+        const cur = String(isoWeekOf(new Date()));
+        if (sel && Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+        christmasWeekPicked = true;
+      }
+      if (christmasWeeklyTargets && christmasWeeklyActual) {
         renderChristmasTierVsTarget();
         return;
       }
@@ -3032,6 +3050,17 @@ function updateEditStartDateConstraint() {
           console.error('getChristmasWeeklyTargets error', err);
         })
         .getChristmasWeeklyTargets();
+      google.script.run
+        .withSuccessHandler(function(actual) {
+          christmasWeeklyActual = actual || { weeks: {} };
+          renderChristmasTierVsTarget();
+        })
+        .withFailureHandler(function(err) {
+          console.error('getWeeklyActualPromoGmv error', err);
+          christmasWeeklyActual = { weeks: {} };
+          renderChristmasTierVsTarget();
+        })
+        .getWeeklyActualPromoGmv();
     }
 
     function renderChristmasTierVsTarget() {
@@ -3046,17 +3075,43 @@ function updateEditStartDateConstraint() {
         return;
       }
 
-      const res = christmasLastCoverage;
-      const tiers = res.tiers || {};
-      const rows = [
-        { label: 'PL (Total Poland)', actual: res.pctGmvCovered, target: target.PL },
-        { label: 'Ultra (WAW)', actual: tiers.Ultra ? tiers.Ultra.pctGmvCovered : 0, target: target.Ultra },
-        { label: 'Max (KRA/WRO/POZ)', actual: tiers.Max ? tiers.Max.pctGmvCovered : 0, target: target.Max },
-        { label: 'Med (GDN/LOD/KTW/QLU/SZZ/QYY/RZE)', actual: tiers.Med ? tiers.Med.pctGmvCovered : 0, target: target.Med },
-        { label: 'Min (BZG/SZY + Tier 4)', actual: tiers.Min ? tiers.Min.pctGmvCovered : 0, target: target.Min }
-      ];
+      // Past / current week -> ACTUAL GMV in promo from BigQuery
+      // (Weekly_Promo_GMV). Future week (no data yet) -> plan from
+      // Master_Log (approved promos running today).
+      const actualWeek = christmasWeeklyActual && christmasWeeklyActual.weeks
+        ? christmasWeeklyActual.weeks[week] : null;
+      let rows, note;
+      if (actualWeek) {
+        const a = k => (actualWeek[k] ? actualWeek[k].pctGmvInPromo : 0);
+        rows = [
+          { label: 'PL (Total Poland)', actual: a('PL'), target: target.PL },
+          { label: 'Ultra (WAW)', actual: a('Ultra'), target: target.Ultra },
+          { label: 'Max (KRA/WRO/POZ)', actual: a('Max'), target: target.Max },
+          { label: 'Med (GDN/LOD/KTW/QLU/SZZ/QYY/RZE)', actual: a('Med'), target: target.Med },
+          { label: 'Min (BZG/SZY + Tier 4)', actual: a('Min'), target: target.Min }
+        ];
+        note = 'ACTUAL - BigQuery, Food, brand level (' +
+          (christmasWeeklyActual.basis === 'any_discount' ? 'any promotool discount' : 'partner-funded discount') +
+          '), week from ' + escapeHtml(actualWeek.weekStart || '') +
+          (christmasWeeklyActual.dataUntil ? ', data until ' + escapeHtml(christmasWeeklyActual.dataUntil) : '') +
+          '. Top 6 cities: ' + pct1(actualWeek.top6 ? actualWeek.top6.pctGmvInPromo : 0) + '.';
+      } else {
+        if (!christmasWeeklyActual) return; // still loading
+        const res = christmasLastCoverage;
+        const tiers = res.tiers || {};
+        rows = [
+          { label: 'PL (Total Poland)', actual: res.pctGmvCovered, target: target.PL },
+          { label: 'Ultra (WAW)', actual: tiers.Ultra ? tiers.Ultra.pctGmvCovered : 0, target: target.Ultra },
+          { label: 'Max (KRA/WRO/POZ)', actual: tiers.Max ? tiers.Max.pctGmvCovered : 0, target: target.Max },
+          { label: 'Med (GDN/LOD/KTW/QLU/SZZ/QYY/RZE)', actual: tiers.Med ? tiers.Med.pctGmvCovered : 0, target: target.Med },
+          { label: 'Min (BZG/SZY + Tier 4)', actual: tiers.Min ? tiers.Min.pctGmvCovered : 0, target: target.Min }
+        ];
+        note = 'PLAN - no BigQuery data for week ' + escapeHtml(week) +
+          ' yet; showing approved Master_Log promos running today.';
+      }
 
       el.innerHTML =
+        '<div class="text-[10px] font-semibold text-gray-500 mb-2">' + note + '</div>' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">' +
         rows.map(function(r) {
           const gap = r.actual - r.target;
