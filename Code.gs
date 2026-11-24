@@ -2926,6 +2926,7 @@ function getTracker_(sheetName) {
     btuPromoMap[name].push({
       id: String(r[0] || ''),
       status: status,
+      active: isPromoRunningToday_(r[9], r[10]),
       strategy: String(r[12] || '').trim(),
       maxDiscount: r[21],
       bppDiscount: r[14],
@@ -2973,14 +2974,24 @@ function getTracker_(sheetName) {
     var manager = managerMap[amKey] || '';
 
     var promos = btuPromoMap[key] || [];
+    var activePromos = promos.filter(function(p) { return p.active; });
+    var sheetOnPromo = String(r[6] || '');
+    var sheetLinkedId = String(r[10] || '').trim();
 
-    var onPromo = promos.length > 0
+    // "Yes" only while a matching Master_Log promo is actually running
+    // (start <= today <= end). A "Yes" left in the sheet by the auto-insert
+    // is dropped once the promo it links to has ended; any other manual
+    // value in the sheet is kept as-is.
+    var linkedEnded = sheetLinkedId && promos.some(function(p) {
+      return p.id === sheetLinkedId && !p.active;
+    });
+    var onPromo = activePromos.length > 0
       ? 'Yes'
-      : String(r[6] || '');
+      : (linkedEnded && sheetOnPromo.trim().toLowerCase() === 'yes' ? 'No' : sheetOnPromo);
 
-    var linkedId = promos.length
-      ? promos[promos.length - 1].id
-      : String(r[10] || '');
+    var linkedId = activePromos.length
+      ? activePromos[activePromos.length - 1].id
+      : (sheetLinkedId || (promos.length ? promos[promos.length - 1].id : ''));
 
     return {
       rowIndex: idx + 2,
@@ -3389,12 +3400,18 @@ function getTrackerNationalGmvCoverage(sheetName) {
   //    Store Address ID is 'ALL' for chain-wide promos (that's the default
   //    Create Promo writes) or a comma-separated list - previously both were
   //    used as one literal key, so KFC / McDonald's etc. were never counted.
+  var endedPromoIds = {}; // this tracker's promos not running today (ended or not started yet)
   var master = ss.getSheetByName('Master_Log');
   if (master && master.getLastRow() >= 2) {
-    var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 7).getValues();
+    var masterRows = master.getRange(2, 1, master.getLastRow() - 1, 11).getValues();
     masterRows.forEach(function(r) {
       var status = String(r[2] || '').trim().toUpperCase();
-      if (status !== 'APPROVED' || !promoPurposeIncludes_(r[6], def.promoPurpose)) return;
+      if (!promoPurposeIncludes_(r[6], def.promoPurpose)) return;
+      if (!isPromoRunningToday_(r[9], r[10])) {
+        endedPromoIds[String(r[0] || '').trim()] = true;
+        return;
+      }
+      if (status !== 'APPROVED') return;
       var name = r[4];
       var rawAddr = String(r[5] || '').trim();
       var tokens = splitTrackerIds_(rawAddr);
@@ -3413,13 +3430,15 @@ function getTrackerNationalGmvCoverage(sheetName) {
   var cityPartnerCounts = {};
   var trackerSheet = ss.getSheetByName(sheetName);
   if (trackerSheet && trackerSheet.getLastRow() >= 2) {
-    var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 7).getValues();
+    var trackerRows = trackerSheet.getRange(2, 1, trackerSheet.getLastRow() - 1, 11).getValues();
     trackerRows.forEach(function(r) {
       var city = String(r[0] || '').trim().toUpperCase();
       var name = r[1];
       var onPromo = String(r[6] || '').trim().toLowerCase();
       if (city) cityPartnerCounts[city] = (cityPartnerCounts[city] || 0) + 1;
       if (onPromo !== 'yes' && onPromo !== 'tak') return;
+      // "Yes" written by the auto-insert for a promo that has since ended.
+      if (endedPromoIds[String(r[10] || '').trim()]) return;
       var hits = coverIds_(splitTrackerIds_(r[2]));
       if (!hits) hits = coverByName_(name, city);
       if (!hits) unresolved.push({ source: sheetName, city: city, name: String(name || ''), storeId: String(r[2] || '') });
@@ -3530,6 +3549,18 @@ function getTrackerNationalGmvCoverage(sheetName) {
     unresolvedCount: unresolved.length,
     unresolved: unresolved.slice(0, 50)
   };
+}
+
+// True while a promo is live today (start <= today <= end, in the
+// script's time zone). A blank start/end is treated as open-ended.
+function isPromoRunningToday_(startVal, endVal) {
+  var now = new Date();
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var start = parseDateOnly_(startVal);
+  var end = parseDateOnly_(endVal);
+  if (start && start > today) return false;
+  if (end && end < today) return false;
+  return true;
 }
 
 // Looser partner-name key for matching Master_Log / tracker names to the
