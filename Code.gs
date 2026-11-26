@@ -3651,6 +3651,26 @@ function getCampaignActualPromoGmv(sheetName) {
   };
 }
 
+/**
+ * Run from the editor if the Archived Campaigns tab says "Actual GMV not
+ * calculated yet": shows what the tab receives for BTU.
+ */
+function debugArchivedCampaignGmv() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Archived_GMV_BTU');
+  Logger.log('Sheet Archived_GMV_BTU: ' + (sheet ? (sheet.getLastRow() - 1) + ' data rows' : 'NOT FOUND'));
+  if (sheet && sheet.getLastRow() >= 2) {
+    Logger.log('Header: ' + JSON.stringify(sheet.getRange(1, 1, 1, 7).getValues()[0]));
+    Logger.log('First row: ' + JSON.stringify(sheet.getRange(2, 1, 1, 7).getValues()[0]));
+  }
+  var res = getCampaignActualPromoGmv('BTU');
+  Logger.log('Actual: ' + (res ? 'PL ' + (res.pctGmvInPromo * 100).toFixed(1) + '%, top6 ' +
+    (res.pctGmvInPromoTop6 * 100).toFixed(1) + '%, total GMV ' + Math.round(res.totalGmv) +
+    ', period ' + res.periodStart + ' - ' + res.periodEnd : 'null'));
+  var cov = getTrackerNationalGmvCoverage('BTU');
+  Logger.log('Coverage response has campaignActual: ' + (cov.campaignActual ? 'yes' : 'NO'));
+  return res;
+}
+
 function safeCampaignActualPromoGmv_(sheetName) {
   try {
     return getCampaignActualPromoGmv(sheetName);

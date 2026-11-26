@@ -2442,8 +2442,12 @@ function updateEditStartDateConstraint() {
           (act.periodSource === 'Master_Log' ? ' (taken from Master_Log promo dates)' : '') +
           '. PLAN: Master_Log promos, refreshed ' + escapeHtml(new Date(res.generatedAt).toLocaleString()) + '.';
       } else {
-        periodNote = 'Actual GMV not calculated yet' +
-          (res.campaignActual && res.campaignActual.error ? ' (' + escapeHtml(res.campaignActual.error) + ')' : '') +
+        const why = !('campaignActual' in res)
+          ? ' (server code is older than this page - redeploy Code.gs as a new version)'
+          : (res.campaignActual && res.campaignActual.error
+              ? ' (' + escapeHtml(res.campaignActual.error) + ')'
+              : (res.campaignActual ? ' (sheet has no GMV)' : ' (sheet Archived_GMV_' + escapeHtml(res.campaignSheet || 'BTU') + ' not found or empty)'));
+        periodNote = 'Actual GMV not calculated yet' + why +
           ' - run refreshArchivedCampaignGmv' + escapeHtml(res.campaignSheet || 'BTU') + '() in Data_Pull.gs. Showing PLAN (Master_Log).';
       }
 
