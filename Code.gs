@@ -3566,8 +3566,8 @@ function getTrackerNationalGmvCoverage(sheetName) {
 // campaigns. Leave null to derive it from the campaign's Master_Log promos
 // (earliest start - latest end of non-rejected promos with that purpose).
 var CAMPAIGN_PERIODS = {
-  'BTU': null
-  // e.g. 'BTU': { start: '2026-09-21', end: '2026-10-18' }
+  // BTU vol.2: weeks 42-43.
+  'BTU': { start: '2026-10-12', end: '2026-10-25' }
 };
 
 function getCampaignPeriod_(sheetName) {
