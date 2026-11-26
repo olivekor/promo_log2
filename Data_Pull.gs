@@ -813,7 +813,8 @@ var DATA_PULL_WEEKLY_PROMO_GMV_SHEET = 'Weekly_Promo_GMV';
 // that week counts. Two variants, so the app can follow either rule:
 //   gmv_in_promo_partner_funded - brand had partner-funded discounts > 0
 //   gmv_in_promo_any_discount   - brand had any promotool discounts > 0
-var DATA_PULL_WEEKLY_PROMO_GMV_QUERY = `WITH base AS (
+function dataPullBuildPromoGmvQuery_(startSql, endSql) {
+  return `WITH base AS (
     SELECT
         DATE_TRUNC(t.p_creation_date, WEEK(MONDAY)) AS week_start,
         COALESCE(t.store_name, '') AS store_name,
@@ -826,8 +827,8 @@ var DATA_PULL_WEEKLY_PROMO_GMV_QUERY = `WITH base AS (
         ON t.city_code = c.city_code
     WHERE c.country_code = 'PL'
       AND t.vertical = 'Food'
-      AND t.p_creation_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(MONDAY)), INTERVAL 7 WEEK)
-      AND t.p_creation_date < CURRENT_DATE()
+      AND t.p_creation_date >= ${startSql}
+      AND t.p_creation_date <= ${endSql}
     GROUP BY 1, 2, 3
 ),
 brand AS (
@@ -846,13 +847,20 @@ SELECT
     ROUND(SUM(b.gmv), 2) AS gmv_total,
     ROUND(SUM(IF(br.promo_partner, b.gmv, 0)), 2) AS gmv_in_promo_partner_funded,
     ROUND(SUM(IF(br.promo_any, b.gmv, 0)), 2) AS gmv_in_promo_any_discount,
-    FORMAT_DATE('%Y-%m-%d', MAX(DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY))) AS data_until
+    FORMAT_DATE('%Y-%m-%d', MAX(LEAST(${endSql}, DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)))) AS data_until
 FROM base b
 JOIN brand br
     ON b.week_start = br.week_start
    AND b.store_name = br.store_name
 GROUP BY 1, 2, 3
 ORDER BY 1, 3`;
+}
+
+// Last 8 weeks (current week = Monday..yesterday).
+var DATA_PULL_WEEKLY_PROMO_GMV_QUERY = dataPullBuildPromoGmvQuery_(
+  'DATE_SUB(DATE_TRUNC(CURRENT_DATE(), WEEK(MONDAY)), INTERVAL 7 WEEK)',
+  'DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)'
+);
 
 function refreshWeeklyPromoGmv() {
   var label = 'Weekly_Promo_GMV';
@@ -866,6 +874,39 @@ function refreshWeeklyPromoGmv() {
     dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err));
     throw err;
   }
+}
+
+/**
+ * ACTUAL GMV in promo for an ended (archived) campaign, over its whole
+ * period, same method as refreshWeeklyPromoGmv. Writes "Archived_GMV_<sheet>"
+ * (e.g. Archived_GMV_BTU). The campaign is over, so run it once manually
+ * (or again after changing the period in CAMPAIGN_PERIODS in Code.gs):
+ *   refreshArchivedCampaignGmvBTU()
+ */
+function refreshArchivedCampaignGmv(sheetName) {
+  var period = getCampaignPeriod_(sheetName);
+  if (!period || !period.start || !period.end) {
+    throw new Error('No period for campaign ' + sheetName + ' - set CAMPAIGN_PERIODS in Code.gs.');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(period.start) || !/^\d{4}-\d{2}-\d{2}$/.test(period.end)) {
+    throw new Error('Bad period for ' + sheetName + ': ' + period.start + ' - ' + period.end);
+  }
+  var label = 'Archived_GMV_' + sheetName;
+  try {
+    var query = dataPullBuildPromoGmvQuery_("DATE '" + period.start + "'", "DATE '" + period.end + "'");
+    var result = dataPullRunBigQuery_(query, label);
+    dataPullWriteTable_(label, result);
+    dataPullLog_(label, 'SUCCESS', result.values.length, 'Actual GMV in promo for ' + sheetName + ' (' + period.start + ' - ' + period.end + ', ' + period.source + ').', result.jobId);
+    Logger.log(label + ' refreshed for ' + period.start + ' - ' + period.end + ' (' + period.source + '): ' + result.values.length + ' rows.');
+    return {status:'SUCCESS', rows:result.values.length, period: period};
+  } catch (err) {
+    dataPullLog_(label, 'ERROR', 0, String(err && err.message ? err.message : err));
+    throw err;
+  }
+}
+
+function refreshArchivedCampaignGmvBTU() {
+  return refreshArchivedCampaignGmv('BTU');
 }
 
 function refreshPartners() {

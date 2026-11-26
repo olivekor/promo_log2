@@ -3554,8 +3554,110 @@ function getTrackerNationalGmvCoverage(sheetName) {
     // sheet the daily trigger fills - no BigQuery call here) + targets, sent
     // in this same response so the page doesn't need separate calls.
     weeklyActual: sheetName === 'Christmas' ? safeWeeklyActualPromoGmv_() : null,
+    // Ended campaigns (Archived Campaigns tab): ACTUAL GMV in promo over the
+    // whole campaign period, from the Archived_GMV_<sheet> sheet.
+    campaignActual: sheetName !== 'Christmas' ? safeCampaignActualPromoGmv_(sheetName) : null,
+    campaignSheet: sheetName,
     weeklyTargets: sheetName === 'Christmas' ? CHRISTMAS_WEEKLY_TARGETS : null
   };
+}
+
+// Campaign periods (yyyy-mm-dd, inclusive) for the ACTUAL GMV of ended
+// campaigns. Leave null to derive it from the campaign's Master_Log promos
+// (earliest start - latest end of non-rejected promos with that purpose).
+var CAMPAIGN_PERIODS = {
+  'BTU': null
+  // e.g. 'BTU': { start: '2026-09-21', end: '2026-10-18' }
+};
+
+function getCampaignPeriod_(sheetName) {
+  var fixed = CAMPAIGN_PERIODS[sheetName];
+  if (fixed && fixed.start && fixed.end) {
+    return { start: fixed.start, end: fixed.end, source: 'CAMPAIGN_PERIODS' };
+  }
+  var def = TRACKER_DEFINITIONS[sheetName];
+  if (!def) return null;
+  var master = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Master_Log');
+  if (!master || master.getLastRow() < 2) return null;
+  var rows = master.getRange(2, 1, master.getLastRow() - 1, 11).getValues();
+  var minStart = null, maxEnd = null;
+  rows.forEach(function(r) {
+    if (String(r[2] || '').trim().toUpperCase() === 'REJECTED') return;
+    if (!promoPurposeIncludes_(r[6], def.promoPurpose)) return;
+    var st = parseDateOnly_(r[9]);
+    var en = parseDateOnly_(r[10]);
+    if (st && (!minStart || st < minStart)) minStart = st;
+    if (en && (!maxEnd || en > maxEnd)) maxEnd = en;
+  });
+  if (!minStart || !maxEnd) return null;
+  var tz = Session.getScriptTimeZone();
+  return {
+    start: Utilities.formatDate(minStart, tz, 'yyyy-MM-dd'),
+    end: Utilities.formatDate(maxEnd, tz, 'yyyy-MM-dd'),
+    source: 'Master_Log'
+  };
+}
+
+/**
+ * ACTUAL GMV in promo for an ended campaign over its whole period (sum of
+ * in-promo GMV / sum of GMV across the campaign weeks), from the
+ * "Archived_GMV_<sheetName>" sheet written by refreshArchivedCampaignGmv().
+ */
+function getCampaignActualPromoGmv(sheetName) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Archived_GMV_' + sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return null;
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues();
+  var tz = Session.getScriptTimeZone();
+  var useAny = WEEKLY_PROMO_GMV_BASIS === 'any_discount';
+  var TOP6 = { WAW: 1, KRA: 1, GDN: 1, LOD: 1, POZ: 1, WRO: 1 };
+
+  var pl = { t: 0, p: 0 }, top6 = { t: 0, p: 0 }, cities = {}, weeks = {};
+  var firstWeek = null, dataUntil = null;
+  rows.forEach(function(r) {
+    var weekStart = r[0] instanceof Date ? Utilities.formatDate(r[0], tz, 'yyyy-MM-dd') : String(r[0] || '');
+    var week = toNumber_(r[1]);
+    var city = String(r[2] || '').trim().toUpperCase();
+    var total = toNumber_(r[3]) || 0;
+    var promo = toNumber_(useAny ? r[5] : r[4]) || 0;
+    pl.t += total; pl.p += promo;
+    if (TOP6[city]) { top6.t += total; top6.p += promo; }
+    if (!cities[city]) cities[city] = { t: 0, p: 0 };
+    cities[city].t += total; cities[city].p += promo;
+    if (week) {
+      if (!weeks[week]) weeks[week] = { week: week, weekStart: weekStart, t: 0, p: 0 };
+      weeks[week].t += total; weeks[week].p += promo;
+    }
+    if (weekStart && (!firstWeek || weekStart < firstWeek)) firstWeek = weekStart;
+    var until = r[6] instanceof Date ? Utilities.formatDate(r[6], tz, 'yyyy-MM-dd') : String(r[6] || '');
+    if (until && (!dataUntil || until > dataUntil)) dataUntil = until;
+  });
+
+  var pct = function(b) { return b.t ? b.p / b.t : 0; };
+  var cityPct = {};
+  Object.keys(cities).forEach(function(c) { cityPct[c] = pct(cities[c]); });
+  var period = getCampaignPeriod_(sheetName);
+  return {
+    basis: WEEKLY_PROMO_GMV_BASIS,
+    periodStart: period ? period.start : firstWeek,
+    periodEnd: period ? period.end : dataUntil,
+    periodSource: period ? period.source : 'sheet',
+    pctGmvInPromo: pct(pl),
+    pctGmvInPromoTop6: pct(top6),
+    totalGmv: pl.t,
+    promoGmv: pl.p,
+    cities: cityPct,
+    weeks: Object.keys(weeks).sort(function(a, b) { return weeks[a].weekStart < weeks[b].weekStart ? -1 : 1; })
+      .map(function(k) { var w = weeks[k]; return { week: w.week, weekStart: w.weekStart, pct: pct(w) }; })
+  };
+}
+
+function safeCampaignActualPromoGmv_(sheetName) {
+  try {
+    return getCampaignActualPromoGmv(sheetName);
+  } catch (e) {
+    Logger.log('getCampaignActualPromoGmv(' + sheetName + ') failed: ' + e);
+    return { error: String(e && e.message ? e.message : e) };
+  }
 }
 
 function safeWeeklyActualPromoGmv_() {

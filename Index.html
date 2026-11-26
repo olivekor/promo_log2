@@ -2420,24 +2420,60 @@ function updateEditStartDateConstraint() {
 
       const pct1 = function(v) { return (v == null || isNaN(v)) ? '-' : (Math.round(v * 1000) / 10) + '%'; };
 
+      // ACTUAL = BigQuery over the whole campaign period (Archived_GMV_<sheet>);
+      // PLAN = Master_Log promos (what the tracker logic counts).
+      const act = res.campaignActual && !res.campaignActual.error && res.campaignActual.totalGmv ? res.campaignActual : null;
       const topCities = ['WAW', 'KRA', 'GDN', 'LOD', 'POZ', 'WRO'];
       const cityRows = (res.cities || []).map(function(c) {
         const rowClass = topCities.indexOf(c.city) !== -1 ? 'border-t border-gray-100 bg-yellow-50' : 'border-t border-gray-100';
+        const actual = act && act.cities ? act.cities[c.city] : null;
         return '<tr class="' + rowClass + '">' +
           '<td class="px-3 py-2 font-bold">' + escapeHtml(c.city) + '</td>' +
           '<td class="px-3 py-2 text-right">' + num0(c.partners) + '</td>' +
-          '<td class="px-3 py-2 text-right font-bold">' + pct1(c.pctGmvCovered) + '</td>' +
+          '<td class="px-3 py-2 text-right font-bold">' + (act ? pct1(actual == null ? 0 : actual) : '-') + '</td>' +
+          '<td class="px-3 py-2 text-right text-gray-400">' + pct1(c.pctGmvCovered) + '</td>' +
           '</tr>';
       }).join('');
 
+      let periodNote;
+      if (act) {
+        periodNote = 'ACTUAL: BigQuery, Food, brand level (' + (act.basis === 'any_discount' ? 'any promotool discount' : 'partner-funded discount') +
+          '), campaign period ' + escapeHtml(act.periodStart || '?') + ' - ' + escapeHtml(act.periodEnd || '?') +
+          (act.periodSource === 'Master_Log' ? ' (taken from Master_Log promo dates)' : '') +
+          '. PLAN: Master_Log promos, refreshed ' + escapeHtml(new Date(res.generatedAt).toLocaleString()) + '.';
+      } else {
+        periodNote = 'Actual GMV not calculated yet' +
+          (res.campaignActual && res.campaignActual.error ? ' (' + escapeHtml(res.campaignActual.error) + ')' : '') +
+          ' - run refreshArchivedCampaignGmv' + escapeHtml(res.campaignSheet || 'BTU') + '() in Data_Pull.gs. Showing PLAN (Master_Log).';
+      }
+
+      const weekChips = act && act.weeks && act.weeks.length
+        ? '<div class="flex flex-wrap gap-2 mb-4">' + act.weeks.map(function(w) {
+            return '<div class="px-3 py-2 rounded-lg bg-gray-50 border border-gray-100 text-xs">' +
+              '<span class="text-gray-500">Week ' + escapeHtml(String(w.week)) + '</span> ' +
+              '<span class="font-bold text-gray-900">' + pct1(w.pct) + '</span></div>';
+          }).join('') + '</div>'
+        : '';
+
+      const tile = function(label, main, sub) {
+        return '<div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100"><div class="text-xs font-semibold uppercase text-gray-500">' + label + '</div>' +
+          '<div class="text-2xl font-extrabold text-gray-900 mt-2">' + main + '</div>' +
+          (sub ? '<div class="text-[11px] text-gray-400 mt-1">' + sub + '</div>' : '') + '</div>';
+      };
+
       el.innerHTML =
-        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">' +
-          '<div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100"><div class="text-xs font-semibold uppercase text-gray-500">Total Poland GMV in promo</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + pct1(res.pctGmvCovered) + '</div></div>' +
-          '<div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100"><div class="text-xs font-semibold uppercase text-gray-500">Top 6 Cities GMV in promo</div><div class="text-2xl font-extrabold text-gray-900 mt-2">' + pct1(res.pctGmvCoveredTop6) + '</div></div>' +
-          '<div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100"><div class="text-xs font-semibold uppercase text-gray-500">Last refreshed</div><div class="text-sm font-bold text-gray-700 mt-2">' + escapeHtml(new Date(res.generatedAt).toLocaleString()) + '</div></div>' +
+        '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">' +
+          tile('Total Poland GMV in promo' + (act ? ' (actual)' : ''), act ? pct1(act.pctGmvInPromo) : pct1(res.pctGmvCovered),
+            act ? 'Plan (Master_Log): ' + pct1(res.pctGmvCovered) : 'Plan (Master_Log)') +
+          tile('Top 6 Cities GMV in promo' + (act ? ' (actual)' : ''), act ? pct1(act.pctGmvInPromoTop6) : pct1(res.pctGmvCoveredTop6),
+            act ? 'Plan (Master_Log): ' + pct1(res.pctGmvCoveredTop6) : 'Plan (Master_Log)') +
+          tile('Campaign period', act ? escapeHtml((act.periodStart || '?') + ' – ' + (act.periodEnd || '?')) : '-',
+            act ? 'Data from BigQuery (Food, PL)' : '') +
         '</div>' +
+        '<div class="text-[10px] text-gray-500 mb-3">' + periodNote + '</div>' +
+        weekChips +
         '<table class="min-w-full text-xs">' +
-          '<thead class="bg-gray-50 text-gray-500 uppercase"><tr><th class="px-3 py-2 text-left">City</th><th class="px-3 py-2 text-right">Partners</th><th class="px-3 py-2 text-right">GMV in promo</th></tr></thead>' +
+          '<thead class="bg-gray-50 text-gray-500 uppercase"><tr><th class="px-3 py-2 text-left">City</th><th class="px-3 py-2 text-right">Partners</th><th class="px-3 py-2 text-right">GMV in promo (actual)</th><th class="px-3 py-2 text-right">Plan (Master_Log)</th></tr></thead>' +
           '<tbody>' + cityRows + '</tbody>' +
         '</table>';
     }
